@@ -86,6 +86,15 @@ define(["util"], function (util) {
         state.i++;
         return util.createForm("literal", '"' + chunk + '"');
     }
+    
+    function readSpecial(state) {
+        var chunk = readToDelim(state);
+        if (chunk === "#t") {
+            return util.createForm("literal", true);
+        } else if (chunk === "#f") {
+            return util.createForm("literal", false);
+        }
+    }
 
     function readSymbol(state) {
         // TODO: this might be a tad too relaxed
@@ -187,6 +196,7 @@ define(["util"], function (util) {
         "8" : readNum,
         "9" : readNum,
         '"' : readString,
+        '#' : readSpecial,
         " " : skip,
         "\t": skip,
         "\n": newline,

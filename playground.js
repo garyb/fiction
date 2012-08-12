@@ -52,9 +52,10 @@ require(["reader", "expander", "evaluator", "util"], function (reader, expander,
 
         read("symbols", ["a", "lower", "UPPER", "camelCase", "CamelCase", "j0", "hyphen-ated", "under_scored", "dot.ted", ".length", "úņīčőđē"]);
         
-        read("ints", "5");
-        read("floats", "5.2");
-        read("hex", "0xFF");
+        read("numbers", ["5", "5.2"]);
+        read("hex numbers", "0xFF");
+        
+        read("booleans", ["#t", "#f"]);
         
         read("strings", ['"word"', '"how long is a piece of..."; string', '"escape \\"this\\""']);
         
