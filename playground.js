@@ -92,6 +92,7 @@ require(["reader", "expander", "evaluator", "util"], function (reader, expander,
         // ---
         
         evaluate("literals", ["5", "5.2", "0xFF", '"hello"']);
+        evaluate("variables", "(var a 500) a");
         
         if (!errored) {
             trace("status", "It's all good.", new Date().getTime() - t, "ms.");
