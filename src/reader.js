@@ -220,7 +220,7 @@ define(function () {
             if (reader === skip) {
                 state.i++;
                 continue;
-            } else if (reader !== undefined) {
+            } else if (reader) {
                 return reader(state);
             } else {
                 return readSymbol(state);
