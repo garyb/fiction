@@ -16,6 +16,7 @@ define(["util"], function (util) {
         state.i++;
         state.lineNum++;
         state.charNum = 1;
+        return read(state);
     }
 
     function readList(state) {
