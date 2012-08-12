@@ -18,7 +18,7 @@ define(function () {
     };
 
     function expand(form) {
-        if (form.type === "list") {
+        if (form.type === "list" && form.value.length > 0) {
             var car = form.value[0];
             if (car.type === "symbol") {
                 var expander = expanders[car.value];
