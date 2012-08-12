@@ -123,7 +123,7 @@ define(function () {
                 text += chr;
             }
         }
-        return form("comment", text);
+        return form("list", [form("symbol", "comment"), text]);
     }
 
     function readQuote(type) {
@@ -133,7 +133,7 @@ define(function () {
             if (x === null) {
                 error("Expected something for " + type.substring(0, type.length - 1) + "ing")(state);
             }
-            return form(type, x);
+            return form("list", [form("symbol", type), x]);
         };
     }
     
@@ -148,7 +148,7 @@ define(function () {
         if (x === null) {
             error("Expected something for " + (type === "unquote" ? "unquoting" : type))(state);
         }
-        return form(type, x);
+        return form("list", [form("symbol", type), x]);
     }
     
     var delimiters = {
