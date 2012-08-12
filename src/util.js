@@ -16,18 +16,31 @@ define(function () {
     function createForm(type, value, extras) {
         var self = {
             type: type,
-            value: value,
-            toString: function () {
-                var v = Array.isArray(self.value) ? "[" + self.value.join(", ") + "]" : self.value;
-                return "{ type: " + self.type + ", value: " + v + " }";
-            }
+            value: value
         };
         return extras ? copyProps(self, extras) : self;
     }
     
+    function printRawForm(input) {
+        if (Array.isArray(input)) {
+            var out = [];
+            for (var i = 0, l = input.length; i < l; i++) {
+                out[i] = printRawForm(input[i]);
+            }
+            return "[" + out.join(", ") + "]";
+        }
+        if (input.hasOwnProperty("type") && input.hasOwnProperty("value")) {
+            var v = Array.isArray(input.value) ? printRawForm(input.value) : input.value;
+            return "{ type: " + input.type + ", value: " + v + " }";
+        } else {
+            return input.toString();
+        }
+    }
+    
     return {
         copyProps: copyProps,
-        createForm: createForm
+        createForm: createForm,
+        printRawForm: printRawForm
     };
     
 });
