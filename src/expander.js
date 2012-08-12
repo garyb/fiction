@@ -13,28 +13,15 @@ define(function () {
         return null;
     }
     
-    var specialForms = {
+    var expanders = {
         "comment": expandComment
-        /*
-        "var": expandVar,
-        "fn": expandFunc,
-        "if": expandIf,
-        "quote": expandQuote,
-        "quasiquote": expandQuasiQuote,
-        "unquote": expandUnquote,
-        "unquote-splicing": expandUnquoteSplicing,
-        "set!": expandSet
-        */
     };
 
     function expand(form) {
         if (form.type === "list") {
-            if (form.value.length === 0) {
-                error("Empty application", form);
-            }
             var car = form.value[0];
             if (car.type === "symbol") {
-                var expander = specialForms[car.value];
+                var expander = expanders[car.value];
                 if (expander) {
                     return expander(form);
                 }
