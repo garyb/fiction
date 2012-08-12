@@ -1,6 +1,6 @@
 /*jshint browser: true, devel: true, bitwise: true, camelcase: true, curly: true, eqeqeq: true, forin: true, immed: true, indent: 4, latedef: true, newcap: true, noarg: true, noempty: true, nonew: true, regexp: true, undef: true, unused: true, strict: true*/
 /*global require*/
-require(["reader", "expander", "util"], function (reader, expander, util) {
+require(["reader", "expander", "evaluator", "util"], function (reader, expander, evaluator, util) {
 
     "use strict";
     
@@ -37,6 +37,12 @@ require(["reader", "expander", "util"], function (reader, expander, util) {
     function expand(name, input) {
         run("expander", name, input, function (x) {
             return util.printRawForm(expander.expand(reader.read(x)));
+        });
+    }    
+    
+    function evaluate(name, input) {
+        run("evaluator", name, input, function (x) {
+            return evaluator.evaluate(expander.expand(reader.read(x)));
         });
     }
 
@@ -82,6 +88,10 @@ require(["reader", "expander", "util"], function (reader, expander, util) {
         expand("1-item paren list", "(a)");
         
         expand("comments in lists", ["(do\n;some\nthing)"]);
+        
+        // ---
+        
+        evaluate("literals", ["5", "5.2", "0xFF", '"hello"']);
         
         if (!errored) {
             trace("status", "It's all good.", new Date().getTime() - t, "ms.");

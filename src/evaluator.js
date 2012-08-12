@@ -5,7 +5,11 @@ define(function () {
     "use strict";
     
     function evaluate(form, scope) {
-        return { value: null, scope: scope };
+        var result = { value: null, scope: scope };
+        if (form.type === "literal") {
+            result.value = form.value;
+        }
+        return result;
     }
     
     function evaluateAll(forms) {
