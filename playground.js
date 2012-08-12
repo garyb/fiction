@@ -1,6 +1,6 @@
 /*jshint browser: true, devel: true, bitwise: true, camelcase: true, curly: true, eqeqeq: true, forin: true, immed: true, indent: 4, latedef: true, newcap: true, noarg: true, noempty: true, nonew: true, regexp: true, undef: true, unused: true, strict: true*/
 /*global require*/
-require(["src/reader"], function (reader) {
+require(["reader", "expander", "util"], function (reader, expander, util) {
 
     "use strict";
     
@@ -16,7 +16,6 @@ require(["src/reader"], function (reader) {
         if (errored) {
             return;
         }
-        console.log(document.getElementById(cat));
         document.getElementById(cat).parentNode.className = "block populated";
         trace(cat, name + ":");
         if (Array.isArray(input)) {
@@ -31,7 +30,13 @@ require(["src/reader"], function (reader) {
     
     function read(name, input) {
         run("reader", name, input, function (x) {
-            return reader.read(x).join(", ");
+            return util.printRawForm(reader.read(x));
+        });
+    } 
+    
+    function expand(name, input) {
+        run("expander", name, input, function (x) {
+            return util.printRawForm(expander.expand(reader.read(x)));
         });
     }
 
@@ -61,10 +66,22 @@ require(["src/reader"], function (reader) {
         read("2-item bracket list", "[a 5]");
         read("2-item brace list", "{a 5}");
         
+        read("multiline paren list", ["(do\nsome\nthing)", "(do\n;some\nthing)"]);
+        
         read("quoting", ["'a", "'5", "'()", "'(a)", "'(a 5)"]);
         read("quasiquoting", ["`a", "`5", "`()", "`(a)", "`(a 5)"]);
         read("unquoting", [",a", ",5", ",()", ",(a)", ",(a 5)"]);
         read("unquote-splicing", [",@a", ",@5", ",@()", ",@(a)", ",@(a 5)"]);
+        
+        // ---
+        
+        expand("symbols", ["a", ".length"]);
+        expand("literals", ["5", "5.2", "0xFF", '"word"']);
+        expand("comments", ["; sup?"]);
+        
+        expand("1-item paren list", "(a)");
+        
+        expand("comments in lists", ["(do\n;some\nthing)"]);
         
         if (!errored) {
             trace("status", "It's all good.", new Date().getTime() - t, "ms.");
