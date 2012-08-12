@@ -11,12 +11,38 @@
   <style type="text/css">
   
       body {
-        background: #fafafa;
+        background: #ddd;
         color: #444;
+        margin: 0;
+        padding: 0;
+      }
+      
+      h2 {
+        font: 16px Arial, Helvetica, sans-serif;
+        font-weight: bold;
+        margin: 0;
+        padding: 0;
       }
   
       pre {
         font: 11px/16px "DejaVu Sans Mono", Consolas, monospace;
+      }
+      
+      .block {
+        background: #fafafa;
+        padding: 10px;
+        margin: 10px;
+        display: none;
+      }
+      
+      #status {
+        background: #fafafa;
+        margin: 10px;
+        padding: 10px;
+      }
+      
+      .populated {
+        display: block;
       }
   
   </style>
@@ -25,7 +51,17 @@
 
 <body>
 
-  <pre id="out"></pre>  
+  <div class="block">
+    <h2>Reader</h2>
+    <pre id="reader"></pre>
+  </div>
+  
+  <div class="block">
+    <h2>Expander</h2>
+    <pre id="expander"></pre>
+  </div>
+  
+  <pre id="status"></pre>
   
 </body>
 </html>
