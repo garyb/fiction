@@ -62,29 +62,32 @@ define(["util"], function (util) {
     }
 
     function readString(state) {
+        // TODO: escaping probably needs more work
         state.i++;
         var origState = state.clone();
-        
         var chunk = "";
-        var lastChr = null;
+        var escaped = false;
         var input = state.input;
         while (state.i < state.l) {
             var chr = input.charAt(state.i);
-            if (chr === '"' && lastChr !== "\\") {
+            if (chr === '"' && !escaped) {
                 break;
-            } else {
-                chunk += chr;
-                lastChr = chr;
-                state.i++;
-                state.charNum++;
             }
+            if (escaped || chr !== "\\") {
+                chunk += chr;
+                escaped = false;
+            } else if (chr === "\\") {
+                escaped = true;
+            }
+            state.i++;
+            state.charNum++;
         }
         
         if (state.i === state.l) {
             error("Unclosed string")(origState);
         }
         state.i++;
-        return util.createForm("literal", '"' + chunk + '"');
+        return util.createForm("literal", chunk);
     }
     
     function readSpecial(state) {
