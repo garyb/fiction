@@ -27,7 +27,7 @@ define(function () {
     
     return {
         copyProps: copyProps,
-        form: form
+        createForm: createForm
     };
     
 });
