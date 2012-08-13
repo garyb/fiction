@@ -244,6 +244,11 @@ define(["util"], function (util) {
                 return "(fn " + fn.args + " ...)"; 
             }
         } else if (value.type === "list") {
+            if (checkForm(value, "quote")) {
+                return "'" + print(value.value[1]);
+            } else if (checkForm(value, "unquote")) {
+                return "," + print(value.value[1]);
+            }
             var items = [];
             for (var i = 0, l = value.value.length; i < l; i++) {
                 items[i] = print(value.value[i]);
@@ -252,8 +257,7 @@ define(["util"], function (util) {
         } else if (value.type === "symbol") {
             return value.value;
         }
-        // TODO: figure out what other cases need covering here
-        return "???" + util.printRawForm(value) + "???";
+        error("Unknown value", value);
     }
 
     return { evaluate: evaluateAll, print: print };

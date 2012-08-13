@@ -14,6 +14,9 @@ define(function () {
     }
     
     function printRawForm(input) {
+        if (!input) {
+            return "null";
+        }
         if (Array.isArray(input)) {
             var out = [];
             for (var i = 0, l = input.length; i < l; i++) {
