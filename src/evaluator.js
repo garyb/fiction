@@ -87,12 +87,20 @@ define(["util"], function (util) {
         }
     }
     
+    function evalQuote(args, scope, form) {
+        if (args.length !== 1) {
+            error("Quote expects exactly one form", form);
+        }
+        return { value: args[0], scope: scope };
+    }  
+    
     var specialForms = {
         "var": evalVar,
         "fn": evalFunc,
         "set!": evalAssign,
-        "if": evalIf
-        /* if, quote, quasiquote, unquote, unquote-splicing */
+        "if": evalIf,
+        "quote": evalQuote
+        /* quasiquote, unquote, unquote-splicing */
     };
     
     function evalApply(fn, args, scope, form) {
@@ -180,9 +188,11 @@ define(["util"], function (util) {
                 items[i] = print(value.value[i]);
             }
             return "[" + items.join(" ") + "]";
+        } else if (value.type === "symbol") {
+            return value.value;
         }
         // TODO: figure out what other cases need covering here
-        return "??? " + util.printRawForm(value);
+        return "???" + util.printRawForm(value) + "???";
     }
 
     return { evaluate: evaluateAll, print: print };

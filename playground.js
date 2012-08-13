@@ -105,6 +105,8 @@ require(["reader", "expander", "evaluator", "util"], function (reader, expander,
         // TODO: test empty list truthiness
         evaluate("if", ["(if 1 #t #f)", "(if 0 #t #f)"]);
         
+        evaluate("quoting", ["'1", "'()", "'(1 2 3)", "'(fn () 10)", "''(1 2 3)"]);
+        
         if (!errored) {
             trace("status", "It's all good.", new Date().getTime() - t, "ms.");
         }
