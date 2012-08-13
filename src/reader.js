@@ -9,6 +9,11 @@ define(["util"], function (util) {
             throw new Error(msg + " (line " + state.lineNum + ", char " + state.charNum + ")");
         };
     }
+    
+    function createForm(type, value, extras) {
+        var form = { type: type, value: value };
+        return extras ? util.copyProps(form, extras) : form;
+    }
 
     var skip = { toString: function () { return "{skip}"; } };
 
@@ -45,7 +50,7 @@ define(["util"], function (util) {
         if (!closed) {
             error("Expected '" + closeChr + "'")(origState);
         }
-        return util.createForm("list", values, { sym: sym });
+        return createForm("list", values, { sym: sym });
     }
 
     function readNum(state) {
@@ -53,9 +58,9 @@ define(["util"], function (util) {
         var rxHex = /^0x[0-9A-F]+$/i;
         var chunk = readToDelim(state);
         if (rxNum.test(chunk)) {
-            return util.createForm("literal", parseFloat(chunk, 10));
+            return createForm("literal", parseFloat(chunk, 10));
         } else if (rxHex.test(chunk)) {
-            return util.createForm("literal", parseInt(chunk, 16));
+            return createForm("literal", parseInt(chunk, 16));
         } else {
             error("Invalid characters in number literal '" + chunk + "'")(state);
         }
@@ -87,21 +92,21 @@ define(["util"], function (util) {
             error("Unclosed string")(origState);
         }
         state.i++;
-        return util.createForm("literal", chunk);
+        return createForm("literal", chunk);
     }
     
     function readSpecial(state) {
         var chunk = readToDelim(state);
         if (chunk === "#t") {
-            return util.createForm("literal", true);
+            return createForm("literal", true);
         } else if (chunk === "#f") {
-            return util.createForm("literal", false);
+            return createForm("literal", false);
         }
     }
 
     function readSymbol(state) {
         // TODO: this might be a tad too relaxed
-        return util.createForm("symbol", readToDelim(state));
+        return createForm("symbol", readToDelim(state));
     }
 
     function readComment(state) {
@@ -115,7 +120,7 @@ define(["util"], function (util) {
                 text += chr;
             }
         }
-        return util.createForm("list", [util.createForm("symbol", "comment"), text]);
+        return createForm("list", [createForm("symbol", "comment"), text]);
     }
 
     function readQuote(type) {
@@ -125,7 +130,7 @@ define(["util"], function (util) {
             if (x === null) {
                 error("Expected something for " + type.substring(0, type.length - 1) + "ing")(state);
             }
-            return util.createForm("list", [util.createForm("symbol", type), x]);
+            return createForm("list", [createForm("symbol", type), x]);
         };
     }
     
@@ -140,7 +145,7 @@ define(["util"], function (util) {
         if (x === null) {
             error("Expected something for " + (type === "unquote" ? "unquoting" : type))(state);
         }
-        return util.createForm("list", [util.createForm("symbol", type), x]);
+        return createForm("list", [createForm("symbol", type), x]);
     }
     
     var delimiters = {

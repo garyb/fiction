@@ -12,14 +12,6 @@ define(function () {
         }
         return out;
     }
-
-    function createForm(type, value, extras) {
-        var self = {
-            type: type,
-            value: value
-        };
-        return extras ? copyProps(self, extras) : self;
-    }
     
     function printRawForm(input) {
         if (Array.isArray(input)) {
@@ -39,7 +31,6 @@ define(function () {
     
     return {
         copyProps: copyProps,
-        createForm: createForm,
         printRawForm: printRawForm
     };
     
