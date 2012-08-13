@@ -61,10 +61,20 @@ define(["util"], function (util) {
         return { value: result, scope: scope };
     }
     
+    function evalAssign(args, scope, form) {
+        if (args[0].type !== "symbol") {
+            error("Invalid identifier '" + args[1] + "'", args[1]);
+        }
+        var id = args[0].value;
+        get(scope, id, args[0]);
+        return evalVar(args, scope, form);
+    }
+    
     var specialForms = {
         "var": evalVar,
-        "fn": evalFunc
-        /* if, quote, quasiquote, unquote, unquote-splicing, set! */
+        "fn": evalFunc,
+        "set!": evalAssign
+        /* if, quote, quasiquote, unquote, unquote-splicing */
     };
     
     function evalApply(fn, args, scope, form) {
