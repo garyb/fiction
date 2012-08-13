@@ -102,6 +102,9 @@ require(["reader", "expander", "evaluator", "util"], function (reader, expander,
         
         evaluate("assignment", "(var a 500) (set! a 1) a");
         
+        // TODO: test empty list truthiness
+        evaluate("if", ["(if 1 #t #f)", "(if 0 #t #f)"]);
+        
         if (!errored) {
             trace("status", "It's all good.", new Date().getTime() - t, "ms.");
         }

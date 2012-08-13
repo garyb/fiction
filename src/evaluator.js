@@ -68,12 +68,30 @@ define(["util"], function (util) {
         var id = args[0].value;
         get(scope, id, args[0]);
         return evalVar(args, scope, form);
+    }  
+    
+    function evalIf(args, scope, form) {
+        if (args.length !== 3) {
+            error("If requires 3 exprs, received " + args.length, form);
+        }
+        var tmp = evaluate(args[0], scope);
+        var testv = tmp.value;
+        scope = tmp.scope;
+        if ((testv.type === "literal" && testv.value) || 
+            testv.type === "func" || 
+            testv.type === "symbol" ||
+            (testv.type === "list" && testv.value.length > 0)) {
+            return evaluate(args[1], scope, form);
+        } else {
+            return evaluate(args[2], scope, form);
+        }
     }
     
     var specialForms = {
         "var": evalVar,
         "fn": evalFunc,
-        "set!": evalAssign
+        "set!": evalAssign,
+        "if": evalIf
         /* if, quote, quasiquote, unquote, unquote-splicing */
     };
     
