@@ -92,15 +92,48 @@ define(["util"], function (util) {
             error("Quote expects exactly one form", form);
         }
         return { value: args[0], env: env };
-    }  
+    }
+    
+    function evalQuasiQuote(args, env, form) {
+        if (args.length !== 1) {
+            error("Quasiquote expects exactly one form", form);
+        }
+        return { value: evalQuasiQuotedValue(args[0], env), env: env };
+    }    
+    
+    function evalQuasiQuotedValue(form, env) {
+        if (form.type === "literal" || form.type === "symbol") {
+            return form;
+        }
+        var car = form.value[0];
+        if (car.type === "symbol" && car.value === "unquote") {
+            if (form.value.length !== 2) {
+                error("Unquote expects exactly one form", form);
+            }
+            return evaluate(form.value[1], env).value;
+        } else {
+            for (var i = 0, l = form.value.length; i < l; i++) {
+                form.value[i] = evalQuasiQuotedValue(form.value[i], env);
+            }
+        }
+        return form;
+    }
+    
+    function quasiQuoteScopeError(type) {
+        return function () {
+            error(type + " used outside of quasiquote", arguments[2]);
+        };
+    }
     
     var specialForms = {
         "var": evalVar,
         "fn": evalFunc,
         "set!": evalAssign,
         "if": evalIf,
-        "quote": evalQuote
-        /* quasiquote, unquote, unquote-splicing */
+        "quote": evalQuote,
+        "quasiquote": evalQuasiQuote,
+        "unquote": quasiQuoteScopeError("unquote"),
+        "unquote-splicing": quasiQuoteScopeError("unquote-splicing")
     };
     
     function evalApply(fn, args, env, form) {
