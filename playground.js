@@ -42,7 +42,7 @@ require(["reader", "expander", "evaluator", "util"], function (reader, expander,
     
     function evaluate(name, input) {
         run("evaluator", name, input, function (x) {
-            return evaluator.evaluate(expander.expand(reader.read(x)));
+            return evaluator.print(evaluator.evaluate(expander.expand(reader.read(x))).value);
         });
     }
 
@@ -92,8 +92,14 @@ require(["reader", "expander", "evaluator", "util"], function (reader, expander,
         
         // ---
         
-        evaluate("literals", ["5", "5.2", "0xFF", '"hello"']);
+        evaluate("literals", ["5", "5.2", "0xFF", '"hello"', "#t"]);
         evaluate("variables", "(var a 500) a");
+        
+        evaluate("function defs", ["(fn () 5)", "(fn (x) x)", "(fn (x y) y)", "(fn x x)"]);
+        evaluate("function application", ["(var id (fn (x) x)) (id 5)", "(var id-args (fn x x)) (id-args 1 2 3)"]);
+        
+        
+        evaluate("cons car cdr", "(var cons (fn (x y) (fn (m) (m x y)))) (var car (fn (z) (z (fn (p q) p)))) (var cdr (fn (z) (z (fn (p q) q)))) (car (cdr (cons 1 (cons 2 3))))");
         
         if (!errored) {
             trace("status", "It's all good.", new Date().getTime() - t, "ms.");

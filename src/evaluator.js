@@ -37,18 +37,67 @@ define(["util"], function (util) {
         return { value: tmp.value, scope: put(scope, id, tmp.value) };
     }
     
-    function evalApply(fn, args, scope) {
-        return { value: null, scope: scope };
+    function evalFunc(args, scope, form) {
+        var result = null;
+        if (args.length === 1) {
+            error("Empty function definition", form);
+        }
+        var body = args.slice(1);
+        if (args[0].type === "list") {
+            var argNames = [];
+            var argsList = args[0].value;
+            for (var i = 0, l = argsList.length; i < l; i++) {
+                if (argsList[i].type !== "symbol") {
+                    error("Invalid function argument definition", argsList[i]);
+                }
+                argNames[i] = argsList[i].value;
+            }
+            result = { type: "func", body: body, args: argNames, scope: scope };
+        } else if (args[0].type === "symbol") {
+            result = { type: "func", body: body, args: args[0].value, scope: scope };
+        } else {
+            error("Invalid function arguments definition", args[0]);
+        }
+        return { value: result, scope: scope };
     }
     
     var specialForms = {
-        "var": evalVar
+        "var": evalVar,
+        "fn": evalFunc
+        /* if, quote, quasiquote, unquote, unquote-splicing, set! */
     };
+    
+    function evalApply(fn, args, scope, form) {
+        var tmp = evaluate(fn, scope);
+        var fnv = tmp.value;
+        scope = tmp.scope;
+        var argvs = [];
+        for (var i = 0, l = args.length; i < l; i++) {
+            tmp = evaluate(args[i], scope);
+            argvs[i] = tmp.value;
+            scope = tmp.scope;
+        }
+        if (fnv.type !== "func") {
+            error("Non-function application", form);
+        }
+        var fnscope = fnv.scope;
+        if (Array.isArray(fnv.args)) {
+            if (fnv.args.length !== argvs.length) {
+                error("Argument count mismatch (expected " + fnv.args.length + ", received " + argvs.length + ")", form);
+            }
+            for (var j = 0, m = argvs.length; j < m; j++) {
+                fnscope = put(fnscope, fnv.args[j], argvs[j]);
+            }
+        } else {
+            fnscope = put(fnscope, fnv.args, { type: "list", value: args });
+        }
+        return { value: evaluateAll(fnv.body, fnscope).value, scope: scope };
+    }
     
     function evaluate(form, scope) {
         var result = null;
         if (form.type === "literal") {
-            result = form.value;
+            result = form;
         } else if (form.type === "symbol") {
             result = get(scope, form.value, form);
         } else if (form.type === "list") {
@@ -61,9 +110,9 @@ define(["util"], function (util) {
                 var cdr = form.value.slice(1);
                 var sf = car.type === "symbol" ? specialForms[car.value] : null;
                 if (sf) {
-                    return sf(cdr, scope);
+                    return sf(cdr, scope, form);
                 } else {
-                    return evalApply(car, cdr, scope);
+                    return evalApply(car, cdr, scope, form);
                 }
             }
         }
@@ -78,9 +127,36 @@ define(["util"], function (util) {
             result = tmp.value;
             scope = tmp.scope;
         }
-        return result;
+        return { value: result, scope: scope };
+    }
+    
+    function print(value) {
+        if (value === null) {
+            return "";
+        } else if (value.type === "literal") {
+            var type = typeof value.value;
+            if (type === "string") {
+                // TODO: needs some work to produce valid strings
+                return '"' + value.value + '"';
+            }
+            return value.value;
+        } else if (value.type === "func") {
+            if (Array.isArray(value.args)) {
+                return "(fn (" + value.args.join(" ") + ") ...)"; 
+            } else {
+                return "(fn " + value.args + " ...)"; 
+            }
+        } else if (value.type === "list") {
+            var items = [];
+            for (var i = 0, l = value.value.length; i < l; i++) {
+                items[i] = print(value.value[i]);
+            }
+            return "[" + items.join(" ") + "]";
+        }
+        // TODO: figure out what other cases need covering here
+        return "??? " + util.printRawForm(value);
     }
 
-    return { evaluate: evaluateAll };
+    return { evaluate: evaluateAll, print: print };
 
 });
