@@ -1,6 +1,6 @@
 /*jshint browser: true, devel: true, bitwise: true, camelcase: true, curly: true, eqeqeq: true, forin: true, immed: true, indent: 4, latedef: true, newcap: true, noarg: true, noempty: true, nonew: true, regexp: true, undef: true, unused: true, strict: true*/
 /*global require*/
-require(["reader", "expander", "evaluator", "util"], function (reader, expander, evaluator, util) {
+require(["reader", "expander", "evaluator", "compiler", "util"], function (reader, expander, evaluator, compiler, util) {
 
     "use strict";
     
@@ -43,6 +43,12 @@ require(["reader", "expander", "evaluator", "util"], function (reader, expander,
     function evaluate(name, input) {
         run("evaluator", name, input, function (x) {
             return evaluator.print(evaluator.evaluate(expander.expand(reader.read(x))).value);
+        });
+    }    
+    
+    function compile(name, input) {
+        run("compiler", name, input, function (x) {
+            return "\n    " + compiler.compile(expander.expand(reader.read(x))).replace(/\n/g, "\n    ");
         });
     }
 
@@ -107,6 +113,24 @@ require(["reader", "expander", "evaluator", "util"], function (reader, expander,
         evaluate("quote", ["'1", "'()", "'a", "'(1 2 3)", "'(fn () 10)", "''(1 2 3)"]);
         evaluate("quasiquote & unquote", ["(var a 10) `(1 ,a)", "(var a 10) `(1 '(2 ,a))", "(var a 10) (var b '(2 ,a)) `(1 ,b)", "`(1 ,'(2 3) 4)"]);
         evaluate("unquote-splicing", ["`(1 ,@'(2 3) 4)", "`(,@'(5))"]);
+        
+        // ---
+        
+        compile("literals", ["5", "5.2", "0xFF", '"hello"', "#t"]);
+        compile("variables", "(var a 500) a");
+        
+        compile("function defs", ["(fn () 5)", "(fn (x) x)", "(fn (x y) y)", "(fn x x)"]);
+        compile("function application", ["(var id (fn (x) x)) (id 5)", "(var id-args (fn x x)) (id-args 1 2 3)"]);
+        
+        compile("cons car cdr", "(var cons (fn (x y) (fn (m) (m x y)))) (var car (fn (z) (z (fn (p q) p)))) (var cdr (fn (z) (z (fn (p q) q)))) (car (cdr (cons 1 (cons 2 3))))");
+        
+        compile("assignment", "(var a 500) (set! a 1) a");
+        
+        compile("if", ["(if 1 #t #f)", "(if 0 #t #f)", "(if '() #t #f)", "(if (fn () 4) #t #f)"]);
+        
+        compile("quote", ["'1", "'()", "'a", "'(1 2 3)", "'(fn () 10)", "''(1 2 3)"]);
+        compile("quasiquote & unquote", ["(var a 10) `(1 ,a)", "(var a 10) `(1 '(2 ,a))", "(var a 10) (var b '(2 ,a)) `(1 ,b)", "`(1 ,'(2 3) 4)"]);
+        compile("unquote-splicing", ["`(1 ,@'(2 3) 4)", "`(,@'(5))"]);
         
         if (!errored) {
             trace("status", "It's all good.", new Date().getTime() - t, "ms.");
