@@ -44,7 +44,7 @@ define(["util"], function (util) {
     
     function evalVar(args, env) {
         if (args[0].type !== "symbol") {
-            error("Invalid identifier '" + args[1] + "'", args[1]);
+            error("var: invalid identifier '" + args[1] + "'", args[1]);
         }
         var id = args[0].value;
         env = put(env, id, null);
@@ -54,8 +54,8 @@ define(["util"], function (util) {
     
     function evalFunc(args, env, form) {
         var result = null;
-        if (args.length === 1) {
-            error("Empty function definition", form);
+        if (args.length !== 2) {
+            error("fn: bad syntax", form);
         }
         var body = args.slice(1);
         if (args[0].type === "list") {
@@ -63,7 +63,7 @@ define(["util"], function (util) {
             var argsList = args[0].value;
             for (var i = 0, l = argsList.length; i < l; i++) {
                 if (argsList[i].type !== "symbol") {
-                    error("Invalid function argument definition", argsList[i]);
+                    error("fn: invalid argument definition", argsList[i]);
                 }
                 argNames[i] = argsList[i].value;
             }
@@ -71,14 +71,14 @@ define(["util"], function (util) {
         } else if (args[0].type === "symbol") {
             result = createValue("func", { body: body, args: args[0].value, env: env }, form);
         } else {
-            error("Invalid function arguments definition", args[0]);
+            error("fn: invalid arguments definition", args[0]);
         }
         return { value: result, env: env };
     }
     
     function evalAssign(args, env, form) {
         if (args[0].type !== "symbol") {
-            error("Invalid identifier '" + args[1] + "'", args[1]);
+            error("set!: invalid identifier '" + args[1] + "'", args[1]);
         }
         var id = args[0].value;
         get(env, id, args[0]);
@@ -87,7 +87,7 @@ define(["util"], function (util) {
     
     function evalIf(args, env, form) {
         if (args.length !== 3) {
-            error("If requires 3 exprs, received " + args.length, form);
+            error("if: bad syntax", form);
         }
         var tmp = evaluate(args[0], env);
         var testv = tmp.value;
@@ -104,14 +104,14 @@ define(["util"], function (util) {
     
     function evalQuote(args, env, form) {
         if (args.length !== 1) {
-            error("Quote expects exactly one form", form);
+            error("quote: bad syntax", form);
         }
         return { value: args[0], env: env };
     }
     
     function evalQuasiQuote(args, env, form) {
         if (args.length !== 1) {
-            error("Quasiquote expects exactly one form", form);
+            error("quasiquote: bad syntax", form);
         }
         return { value: evalQuasiQuotedValue(args[0], env), env: env };
     }    
@@ -122,22 +122,22 @@ define(["util"], function (util) {
         }
         if (checkForm(form, "unquote")) {
             if (form.value.length !== 2) {
-                error("unquote expects exactly one form", form);
+                error("unquote: bad syntax", form);
             }
             return evaluate(form.value[1], env).value;
         } else if (checkForm(form, "unquote-splicing")) {
-            error("unquote-splicing used outside of list", form);
+            error("unquote-splicing: not in list", form);
         }
         var result = [];
         for (var i = 0, l = form.value.length; i < l; i++) {
             var f = form.value[i];
             if (checkForm(f, "unquote-splicing")) {
                 if (f.value.length !== 2) {
-                    error("unquote-splicing expects exactly one form", f);
+                    error("unquote-splicing: bad syntax", f);
                 }
                 var v = evalQuasiQuotedValue(evaluate(f.value[1], env).value, env);
                 if (v.type !== "list") {
-                    error("unquote-splicing expects argument of type list", f);
+                    error("unquote-splicing: expects argument of type list", f);
                 }
                 Array.prototype.push.apply(result, v.value);
             } else {
@@ -149,7 +149,7 @@ define(["util"], function (util) {
     
     function quasiQuoteScopeError(type) {
         return function () {
-            error(type + " used outside of quasiquote", arguments[2]);
+            error(type + ": not in quasiquote", arguments[2]);
         };
     }
     
