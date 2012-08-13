@@ -27,6 +27,14 @@ define(["util"], function (util) {
         }
     }
     
+    function checkForm(form, type) {
+        if (form.type === "list" && form.value.length > 0) {
+            var car = form.value[0];
+            return car.type === "symbol" && car.value === type;
+        }        
+        return false;
+    }
+    
     function evalVar(args, env) {
         if (args[0].type !== "symbol") {
             error("Invalid identifier '" + args[1] + "'", args[1]);
@@ -105,16 +113,31 @@ define(["util"], function (util) {
         if (form.type === "literal" || form.type === "symbol") {
             return form;
         }
-        var car = form.value[0];
-        if (car.type === "symbol" && car.value === "unquote") {
+        if (checkForm(form, "unquote")) {
             if (form.value.length !== 2) {
-                error("Unquote expects exactly one form", form);
+                error("unquote expects exactly one form", form);
             }
             return evaluate(form.value[1], env).value;
+        } else if (checkForm(form, "unquote-splicing")) {
+            error("unquote-splicing used outside of list", form);
         } else {
+            var result = [];
             for (var i = 0, l = form.value.length; i < l; i++) {
-                form.value[i] = evalQuasiQuotedValue(form.value[i], env);
+                var f = form.value[i];
+                if (checkForm(f, "unquote-splicing")) {
+                    if (f.value.length !== 2) {
+                        error("unquote-splicing expects exactly one form", f);
+                    }
+                    var v = evalQuasiQuotedValue(evaluate(f.value[1], env).value, env);
+                    if (v.type !== "list") {
+                        error("unquote-splicing expects argument of type list", f);
+                    }
+                    Array.prototype.push.apply(result, v.value);
+                } else {
+                    result.push(evalQuasiQuotedValue(f, env));
+                }
             }
+            form.value = result;
         }
         return form;
     }
@@ -173,8 +196,6 @@ define(["util"], function (util) {
             if (form.value.length === 0) {
                 error("Empty application", form);
             } else {
-                // TODO: not sure about using car to choose special forms here, 
-                // perhaps need to eval quote/unquotes? needs investigation...
                 var car = form.value[0];
                 var cdr = form.value.slice(1);
                 var sf = car.type === "symbol" ? specialForms[car.value] : null;

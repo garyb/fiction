@@ -105,9 +105,9 @@ require(["reader", "expander", "evaluator", "util"], function (reader, expander,
         // TODO: test empty list truthiness
         evaluate("if", ["(if 1 #t #f)", "(if 0 #t #f)"]);
         
-        evaluate("quoting", ["'1", "'()", "'a", "'(1 2 3)", "'(fn () 10)", "''(1 2 3)"]);
-        
-        evaluate("quasiquoting", ["(var a 10) `(1 ,a)", "(var a 10) `(1 '(2 ,a))", "(var a 10) (var b '(2 ,a)) `(1 ,b)"]);
+        evaluate("quote", ["'1", "'()", "'a", "'(1 2 3)", "'(fn () 10)", "''(1 2 3)"]);
+        evaluate("quasiquote & unquote", ["(var a 10) `(1 ,a)", "(var a 10) `(1 '(2 ,a))", "(var a 10) (var b '(2 ,a)) `(1 ,b)", "`(1 ,'(2 3) 4)"]);
+        evaluate("unquote-splicing", ["`(1 ,@'(2 3) 4)", "`(,@'(5))"]);
         
         if (!errored) {
             trace("status", "It's all good.", new Date().getTime() - t, "ms.");
