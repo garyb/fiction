@@ -9,8 +9,8 @@ define(["util"], function (util) {
         throw new Error(msg + " @ " + util.printRawForm(form));
     }
     
-    function put(scope, id, value) {
-        var result = util.copyProps(scope, {});
+    function put(env, id, value) {
+        var result = util.copyProps(env, {});
         if (result.hasOwnProperty(id)) {
             result[id].value = value;
         } else {
@@ -19,25 +19,25 @@ define(["util"], function (util) {
         return result;
     }
     
-    function get(scope, id, form) {
-        if (scope.hasOwnProperty(id)) {
-            return scope[id].value;
+    function get(env, id, form) {
+        if (env.hasOwnProperty(id)) {
+            return env[id].value;
         } else {
             error("Undefined identifier '" + id + "'", form);
         }
     }
     
-    function evalVar(args, scope) {
+    function evalVar(args, env) {
         if (args[0].type !== "symbol") {
             error("Invalid identifier '" + args[1] + "'", args[1]);
         }
         var id = args[0].value;
-        scope = put(scope, id, null);
-        var tmp = evaluate(args[1], scope);
-        return { value: tmp.value, scope: put(scope, id, tmp.value) };
+        env = put(env, id, null);
+        var tmp = evaluate(args[1], env);
+        return { value: tmp.value, env: put(env, id, tmp.value) };
     }
     
-    function evalFunc(args, scope, form) {
+    function evalFunc(args, env, form) {
         var result = null;
         if (args.length === 1) {
             error("Empty function definition", form);
@@ -52,46 +52,46 @@ define(["util"], function (util) {
                 }
                 argNames[i] = argsList[i].value;
             }
-            result = { type: "func", body: body, args: argNames, scope: scope };
+            result = { type: "func", body: body, args: argNames, env: env };
         } else if (args[0].type === "symbol") {
-            result = { type: "func", body: body, args: args[0].value, scope: scope };
+            result = { type: "func", body: body, args: args[0].value, env: env };
         } else {
             error("Invalid function arguments definition", args[0]);
         }
-        return { value: result, scope: scope };
+        return { value: result, env: env };
     }
     
-    function evalAssign(args, scope, form) {
+    function evalAssign(args, env, form) {
         if (args[0].type !== "symbol") {
             error("Invalid identifier '" + args[1] + "'", args[1]);
         }
         var id = args[0].value;
-        get(scope, id, args[0]);
-        return evalVar(args, scope, form);
+        get(env, id, args[0]);
+        return evalVar(args, env, form);
     }  
     
-    function evalIf(args, scope, form) {
+    function evalIf(args, env, form) {
         if (args.length !== 3) {
             error("If requires 3 exprs, received " + args.length, form);
         }
-        var tmp = evaluate(args[0], scope);
+        var tmp = evaluate(args[0], env);
         var testv = tmp.value;
-        scope = tmp.scope;
+        env = tmp.env;
         if ((testv.type === "literal" && testv.value) || 
             testv.type === "func" || 
             testv.type === "symbol" ||
             (testv.type === "list" && testv.value.length > 0)) {
-            return evaluate(args[1], scope, form);
+            return evaluate(args[1], env, form);
         } else {
-            return evaluate(args[2], scope, form);
+            return evaluate(args[2], env, form);
         }
     }
     
-    function evalQuote(args, scope, form) {
+    function evalQuote(args, env, form) {
         if (args.length !== 1) {
             error("Quote expects exactly one form", form);
         }
-        return { value: args[0], scope: scope };
+        return { value: args[0], env: env };
     }  
     
     var specialForms = {
@@ -103,39 +103,39 @@ define(["util"], function (util) {
         /* quasiquote, unquote, unquote-splicing */
     };
     
-    function evalApply(fn, args, scope, form) {
-        var tmp = evaluate(fn, scope);
+    function evalApply(fn, args, env, form) {
+        var tmp = evaluate(fn, env);
         var fnv = tmp.value;
-        scope = tmp.scope;
+        env = tmp.env;
         var argvs = [];
         for (var i = 0, l = args.length; i < l; i++) {
-            tmp = evaluate(args[i], scope);
+            tmp = evaluate(args[i], env);
             argvs[i] = tmp.value;
-            scope = tmp.scope;
+            env = tmp.env;
         }
         if (fnv.type !== "func") {
             error("Non-function application", form);
         }
-        var fnscope = fnv.scope;
+        var fnenv = fnv.env;
         if (Array.isArray(fnv.args)) {
             if (fnv.args.length !== argvs.length) {
                 error("Argument count mismatch (expected " + fnv.args.length + ", received " + argvs.length + ")", form);
             }
             for (var j = 0, m = argvs.length; j < m; j++) {
-                fnscope = put(fnscope, fnv.args[j], argvs[j]);
+                fnenv = put(fnenv, fnv.args[j], argvs[j]);
             }
         } else {
-            fnscope = put(fnscope, fnv.args, { type: "list", value: args });
+            fnenv = put(fnenv, fnv.args, { type: "list", value: args });
         }
-        return { value: evaluateAll(fnv.body, fnscope).value, scope: scope };
+        return { value: evaluateAll(fnv.body, fnenv).value, env: env };
     }
     
-    function evaluate(form, scope) {
+    function evaluate(form, env) {
         var result = null;
         if (form.type === "literal") {
             result = form;
         } else if (form.type === "symbol") {
-            result = get(scope, form.value, form);
+            result = get(env, form.value, form);
         } else if (form.type === "list") {
             if (form.value.length === 0) {
                 error("Empty application", form);
@@ -146,24 +146,24 @@ define(["util"], function (util) {
                 var cdr = form.value.slice(1);
                 var sf = car.type === "symbol" ? specialForms[car.value] : null;
                 if (sf) {
-                    return sf(cdr, scope, form);
+                    return sf(cdr, env, form);
                 } else {
-                    return evalApply(car, cdr, scope, form);
+                    return evalApply(car, cdr, env, form);
                 }
             }
         }
-        return { value: result, scope: scope };
+        return { value: result, env: env };
     }
     
-    function evaluateAll(forms, scope) {
-        scope = scope || {};
+    function evaluateAll(forms, env) {
+        env = env || {};
         var result = null;
         for (var i = 0, l = forms.length; i < l; i++) {
-            var tmp = evaluate(forms[i], scope);
+            var tmp = evaluate(forms[i], env);
             result = tmp.value;
-            scope = tmp.scope;
+            env = tmp.env;
         }
-        return { value: result, scope: scope };
+        return { value: result, env: env };
     }
     
     function print(value) {
