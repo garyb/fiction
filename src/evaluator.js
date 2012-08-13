@@ -92,10 +92,7 @@ define(["util"], function (util) {
         var tmp = evaluate(args[0], env);
         var testv = tmp.value;
         env = tmp.env;
-        if ((testv.type === "literal" && testv.value) || 
-            testv.type === "func" || 
-            testv.type === "symbol" ||
-            (testv.type === "list" && testv.value.length > 0)) {
+        if (testv.value) {
             return evaluate(args[1], env, form);
         } else {
             return evaluate(args[2], env, form);

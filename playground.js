@@ -102,8 +102,7 @@ require(["reader", "expander", "evaluator", "util"], function (reader, expander,
         
         evaluate("assignment", "(var a 500) (set! a 1) a");
         
-        // TODO: test empty list truthiness
-        evaluate("if", ["(if 1 #t #f)", "(if 0 #t #f)"]);
+        evaluate("if", ["(if 1 #t #f)", "(if 0 #t #f)", "(if '() #t #f)", "(if (fn () 4) #t #f)"]);
         
         evaluate("quote", ["'1", "'()", "'a", "'(1 2 3)", "'(fn () 10)", "''(1 2 3)"]);
         evaluate("quasiquote & unquote", ["(var a 10) `(1 ,a)", "(var a 10) `(1 '(2 ,a))", "(var a 10) (var b '(2 ,a)) `(1 ,b)", "`(1 ,'(2 3) 4)"]);
