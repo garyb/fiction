@@ -9,6 +9,13 @@ define(["util"], function (util) {
         throw new Error(msg + " @ " + util.printRawForm(form));
     }
     
+    function createValue(type, value, form) {
+        if (type !== "literal" && type !== "symbol" && type !== "list" && type !== "func") {
+            error("Form must be a literal, symbol, list, or func", form);
+        }
+        return { type: type, value: value };
+    }
+    
     function put(env, id, value) {
         var result = util.copyProps(env, {});
         if (result.hasOwnProperty(id)) {
@@ -60,9 +67,9 @@ define(["util"], function (util) {
                 }
                 argNames[i] = argsList[i].value;
             }
-            result = { type: "func", body: body, args: argNames, env: env };
+            result = createValue("func", { body: body, args: argNames, env: env }, form);
         } else if (args[0].type === "symbol") {
-            result = { type: "func", body: body, args: args[0].value, env: env };
+            result = createValue("func", { body: body, args: args[0].value, env: env }, form);
         } else {
             error("Invalid function arguments definition", args[0]);
         }
@@ -111,7 +118,7 @@ define(["util"], function (util) {
     
     function evalQuasiQuotedValue(form, env) {
         if (form.type === "literal" || form.type === "symbol") {
-            return form;
+            return createValue(form.type, form.value, form);
         }
         if (checkForm(form, "unquote")) {
             if (form.value.length !== 2) {
@@ -120,26 +127,24 @@ define(["util"], function (util) {
             return evaluate(form.value[1], env).value;
         } else if (checkForm(form, "unquote-splicing")) {
             error("unquote-splicing used outside of list", form);
-        } else {
-            var result = [];
-            for (var i = 0, l = form.value.length; i < l; i++) {
-                var f = form.value[i];
-                if (checkForm(f, "unquote-splicing")) {
-                    if (f.value.length !== 2) {
-                        error("unquote-splicing expects exactly one form", f);
-                    }
-                    var v = evalQuasiQuotedValue(evaluate(f.value[1], env).value, env);
-                    if (v.type !== "list") {
-                        error("unquote-splicing expects argument of type list", f);
-                    }
-                    Array.prototype.push.apply(result, v.value);
-                } else {
-                    result.push(evalQuasiQuotedValue(f, env));
-                }
-            }
-            form.value = result;
         }
-        return form;
+        var result = [];
+        for (var i = 0, l = form.value.length; i < l; i++) {
+            var f = form.value[i];
+            if (checkForm(f, "unquote-splicing")) {
+                if (f.value.length !== 2) {
+                    error("unquote-splicing expects exactly one form", f);
+                }
+                var v = evalQuasiQuotedValue(evaluate(f.value[1], env).value, env);
+                if (v.type !== "list") {
+                    error("unquote-splicing expects argument of type list", f);
+                }
+                Array.prototype.push.apply(result, v.value);
+            } else {
+                result.push(evalQuasiQuotedValue(f, env));
+            }
+        }
+        return createValue("list", result, form);
     }
     
     function quasiQuoteScopeError(type) {
@@ -159,8 +164,8 @@ define(["util"], function (util) {
         "unquote-splicing": quasiQuoteScopeError("unquote-splicing")
     };
     
-    function evalApply(fn, args, env, form) {
-        var tmp = evaluate(fn, env);
+    function evalApply(fnf, args, env, form) {
+        var tmp = evaluate(fnf, env);
         var fnv = tmp.value;
         env = tmp.env;
         var argvs = [];
@@ -172,24 +177,25 @@ define(["util"], function (util) {
         if (fnv.type !== "func") {
             error("Non-function application", form);
         }
-        var fnenv = fnv.env;
-        if (Array.isArray(fnv.args)) {
-            if (fnv.args.length !== argvs.length) {
-                error("Argument count mismatch (expected " + fnv.args.length + ", received " + argvs.length + ")", form);
+        var fn = fnv.value;
+        var fnenv = fn.env;
+        if (Array.isArray(fn.args)) {
+            if (fn.args.length !== argvs.length) {
+                error("Argument count mismatch (expected " + fn.args.length + ", received " + argvs.length + ")", form);
             }
             for (var j = 0, m = argvs.length; j < m; j++) {
-                fnenv = put(fnenv, fnv.args[j], argvs[j]);
+                fnenv = put(fnenv, fn.args[j], argvs[j]);
             }
         } else {
-            fnenv = put(fnenv, fnv.args, { type: "list", value: args });
+            fnenv = put(fnenv, fn.args, { type: "list", value: args });
         }
-        return { value: evaluateAll(fnv.body, fnenv).value, env: env };
+        return { value: evaluateAll(fn.body, fnenv).value, env: env };
     }
     
     function evaluate(form, env) {
         var result = null;
         if (form.type === "literal") {
-            result = form;
+            result = createValue(form.type, form.value);
         } else if (form.type === "symbol") {
             result = get(env, form.value, form);
         } else if (form.type === "list") {
@@ -231,10 +237,11 @@ define(["util"], function (util) {
             }
             return value.value;
         } else if (value.type === "func") {
-            if (Array.isArray(value.args)) {
-                return "(fn (" + value.args.join(" ") + ") ...)"; 
+            var fn = value.value;
+            if (Array.isArray(fn.args)) {
+                return "(fn (" + fn.args.join(" ") + ") ...)"; 
             } else {
-                return "(fn " + value.args + " ...)"; 
+                return "(fn " + fn.args + " ...)"; 
             }
         } else if (value.type === "list") {
             var items = [];
