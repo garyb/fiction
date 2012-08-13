@@ -11,6 +11,9 @@ define(["util"], function (util) {
     }
     
     function createForm(type, value, extras) {
+        if (type !== "literal" && type !== "symbol" && type !== "list") {
+            error("Form must be a literal, symbol, or list")(state);
+        }
         var form = { type: type, value: value };
         return extras ? util.copyProps(form, extras) : form;
     }
