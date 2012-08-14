@@ -117,9 +117,9 @@ require(["reader", "expander", "evaluator", "compiler", "util"], function (reade
         // ---
         
         compile("literals", ["5", "5.2", "0xFF", '"hello"', "#t"]);
-        compile("variables", "(var a 500) a");
+        compile("variables", ["(var a 500) a", "(var a \"one\") (var a \"two\") a"]);
         
-        compile("function defs", ["(fn () 5)", "(fn (x) x)", "(fn (x y) y)", "(fn x x)"]);
+        compile("function defs", ["(fn () 5)", "(fn (x) x)", "(fn (x y) y)", "(fn x x)", "(fn x (var x 5))"]);
         compile("function application", ["(var id (fn (x) x)) (id 5)", "(var id-args (fn x x)) (id-args 1 2 3)"]);
         
         compile("cons car cdr", "(var cons (fn (x y) (fn (m) (m x y)))) (var car (fn (z) (z (fn (p q) p)))) (var cdr (fn (z) (z (fn (p q) q)))) (car (cdr (cons 1 (cons 2 3))))");
@@ -128,7 +128,7 @@ require(["reader", "expander", "evaluator", "compiler", "util"], function (reade
         
         compile("if", ["(if 1 #t #f)", "(if 0 #t #f)", "(if '() #t #f)", "(if (fn () 4) #t #f)"]);
         
-        compile("quote", ["'1", "'()", "'a", "'(1 2 3)", "'(fn () 10)", "''(1 2 3)"]);
+        compile("quote", ["'1", "'()", "'a", "'(1 2 3)", "'(fn () 10)", "''(1 2 3)", "'(a)"]);
         compile("quasiquote & unquote", ["(var a 10) `(1 ,a)", "(var a 10) `(1 '(2 ,a))", "(var a 10) (var b '(2 ,a)) `(1 ,b)", "`(1 ,'(2 3) 4)"]);
         compile("unquote-splicing", ["`(1 ,@'(2 3) 4)", "`(,@'(5))"]);
         
