@@ -32,9 +32,18 @@ define(function () {
         }
     }
     
+    function checkForm(form, type) {
+        if (form.type === "list" && form.value.length > 0) {
+            var car = form.value[0];
+            return car.type === "symbol" && car.value === type;
+        }        
+        return false;
+    }
+    
     return {
         copyProps: copyProps,
-        printRawForm: printRawForm
+        printRawForm: printRawForm,
+        checkForm: checkForm
     };
     
 });

@@ -4,6 +4,8 @@ define(["util"], function (util) {
 
     "use strict";
     
+    var checkForm = util.checkForm;
+    
     function error(msg, form) {
         // TODO: add line/char details to forms for better errors
         throw new Error(msg + " @ " + util.printRawForm(form));
@@ -32,14 +34,6 @@ define(["util"], function (util) {
         } else {
             error("Undefined identifier '" + id + "'", form);
         }
-    }
-    
-    function checkForm(form, type) {
-        if (form.type === "list" && form.value.length > 0) {
-            var car = form.value[0];
-            return car.type === "symbol" && car.value === type;
-        }        
-        return false;
     }
     
     function evalVar(args, env) {
