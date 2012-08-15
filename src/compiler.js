@@ -322,25 +322,41 @@ define(["util", "javascript"], function (util, js) {
         return { value: result.value.join(";\n") + ";", env: result.env };
     }
     
-    function usesSymbolQuote(forms, inQuote) {
-        // TODO: needs a little testing, and not especially elegant. accidentally triggered by `(1 ,'(2 3) 4) and other things.
-        inQuote = inQuote === true;
-        for (var i = 0, l = forms.length; i < l; i++) {
-            var form = forms[i];
-            if (inQuote && form.type === "symbol") {
+    function usesSymbolQuote(form, quoteType) {
+        if (quoteType === "quasiquote" && (checkForm(form, "unquote") || checkForm(form, "unquote-splicing"))) {
+            return usesSymbolQuote(form);
+        }
+        if (quoteType === "quote") {
+            if (form.type === "symbol") {
                 return true;
             }
-            if (form.type !== "list" || form.value.length === 0) {
-                continue;
+            if (form.type === "list") {
+                return anyUsesSymbolQuote(form.value, quoteType);
             }
-            if ((form.value[0].value === "quote" || form.value[0].value === "quasiquote")) {
-                if (form.value[1].type === "symbol") {
-                    return true;
-                } else if (form.value[1].type === "list" && usesSymbolQuote(form.value[1].value, true)) {
-                    return true;
-                }
+        }
+        if (quoteType === "quasiquote") {
+            if (form.type === "symbol") {
+                return true;
             }
-            if (usesSymbolQuote(form.value, inQuote)) {
+            if (form.type === "list") {
+                return anyUsesSymbolQuote(form.value, quoteType);
+            }
+        }
+        if (checkForm(form, "quote")) {
+            return usesSymbolQuote(form.value[1], "quote");
+        }
+        if (checkForm(form, "quasiquote")) {
+            return usesSymbolQuote(form.value[1], "quasiquote");
+        }
+        if (form.type === "list") {
+            return anyUsesSymbolQuote(form.value);
+        }
+        return false;
+    }
+    
+    function anyUsesSymbolQuote(forms, quoteType) {
+        for (var i = 0, l = forms.length; i < l; i++) {
+            if (usesSymbolQuote(forms[i], quoteType)) {
                 return true;
             }
         }
@@ -349,7 +365,7 @@ define(["util", "javascript"], function (util, js) {
     
     function compileScript(forms, env) {
         env = env || {};
-        if (usesSymbolQuote(forms)) {
+        if (anyUsesSymbolQuote(forms)) {
             var tmp = put(env, "#symbol", "symbol");
             if (tmp.id !== "symbol") {
                 throw new Error("Don't know how to deal with the case where 'symbol' was already reserved in the environment");
