@@ -307,19 +307,14 @@ define(["util", "javascript"], function (util, js) {
         return { value: result, env: env };
     }
     
-    function compileAll0(forms, env) {
+    function compileAll(forms, env) {
         var result = [];
         for (var i = 0, l = forms.length; i < l; i++) {
             var tmp = compile(forms[i], env);
             result[i] = tmp.value;
             env = tmp.env;
         }
-        return { value: result, env: env };
-    }
-    
-    function compileAll(forms, env) {
-        var result = compileAll0(forms, env);
-        return { value: result.value.join(";\n") + ";", env: result.env };
+        return { value: result.join(";\n") + ";", env: env };
     }
     
     function usesSymbolQuote(form, quoteType) {
