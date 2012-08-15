@@ -48,8 +48,24 @@ require(["reader", "expander", "evaluator", "compiler", "util"], function (reade
     
     function compile(name, input) {
         run("compiler", name, input, function (x) {
-            return "\n    " + compiler.compile(expander.expand(reader.read(x))).replace(/\n/g, "\n    ");
+            /*jshint evil: true*/
+            var js = compiler.compile(expander.expand(reader.read(x))).replace(/\n/g, "\n    ");
+            return "\n    " + js + "\n" + prettyPrint(eval(js)) + "\n";
         });
+    }
+    
+    function prettyPrint(value) {
+        if (Array.isArray(value)) {
+            var items = [];
+            for (var i = 0, l = value.length; i < l; i++) {
+                items[i] = prettyPrint(value[i]);
+            }
+            return "[" + items.join(", ") + "]";
+        }
+        if (typeof value === "string") {
+            return '"' + value + '"';
+        }
+        return value.toString();
     }
 
     window.onload = function () {
