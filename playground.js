@@ -47,7 +47,6 @@ require(["reader", "expander", "evaluator", "compiler", "util"], function (reade
     }
     
     function handleImport(name, k) {
-        console.log("import request:", name);
         if (name === "internal") {
             setTimeout(function () {
                 k(expander.expand(reader.read("(var id (fn (x) x))")));
@@ -187,8 +186,6 @@ require(["reader", "expander", "evaluator", "compiler", "util"], function (reade
         
         // ---
         
-        
-        
         compiles.push(["test", "#t"]);
         compiles.push(["literals", ["5", "5.2", "0xFF", '"hello"', "#t"]]);
         compiles.push(["variables", ["(var a 500) a", "(var a \"one\") (var a \"two\") a"]]);
@@ -207,6 +204,10 @@ require(["reader", "expander", "evaluator", "compiler", "util"], function (reade
         compiles.push(["unquote-splicing", ["`(1 ,@'(2 3) 4)", "`(,@'(5))", "`(1 ,@'() 4)", "(var a '(1 2)) `(5 ,@a)"]]);
         
         compiles.push(["importing", ["(import \"internal\") (id 5)", "(import \"prelude\") (id 5)"]]);
+        
+        // ---
+        
+        compiles.push(["macros", "(import \"macros\" \"prelude\") (do (id 5) (id 10) (id 20))"]);
         
         var runCompiles = function () {
             if (compiles.length > 0) {
