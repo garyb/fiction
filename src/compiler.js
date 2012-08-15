@@ -358,7 +358,7 @@ define(["util", "javascript"], function (util, js) {
         return false;
     }
     
-    function compileScript(forms, env) {
+    function compileScript(forms, k, env) {
         env = env || {};
         if (anyUsesSymbolQuote(forms)) {
             var tmp = put(env, "#symbol", "symbol");
@@ -366,9 +366,9 @@ define(["util", "javascript"], function (util, js) {
                 throw new Error("Don't know how to deal with the case where 'symbol' was already reserved in the environment");
             }
             var symFunc = "var symbol = (function () { var table = {}; return function (id) { return table.hasOwnProperty(id) ? table[id] : table[id] = { toString: function () { return id; } }; }; }());";
-            return symFunc + "\n" + compileAll(forms, env).value;
+            k(symFunc + "\n" + compileAll(forms, env).value);
         } else {
-            return compileAll(forms, env).value;
+            k(compileAll(forms, env).value);
         }
     }
     
