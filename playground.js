@@ -1,5 +1,5 @@
 /*jshint browser: true, devel: true, bitwise: true, camelcase: true, curly: true, eqeqeq: true, forin: true, immed: true, indent: 4, latedef: true, newcap: true, noarg: true, noempty: true, nonew: true, regexp: true, undef: true, unused: true, strict: true*/
-/*global require*/
+/*global require, $*/
 require(["reader", "expander", "evaluator", "compiler", "util"], function (reader, expander, evaluator, compiler, util) {
 
     "use strict";
@@ -44,7 +44,18 @@ require(["reader", "expander", "evaluator", "compiler", "util"], function (reade
         run("evaluator", name, input, function (x) {
             return evaluator.print(evaluator.evaluate(expander.expand(reader.read(x))).value);
         });
-    }    
+    }
+    
+    function handleImport(name, k) {
+        console.log("import request:", name);
+        if (name == "prelude") {
+            setTimeout(function () {
+                k(expander.expand(reader.read("(var id (fn (x) x))")));
+            }, 0);
+        } else {
+            throw new Error("Unhandled import '" + name + "'");
+        }
+    }
     
     function compile(name, input, k) {
     
@@ -56,7 +67,7 @@ require(["reader", "expander", "evaluator", "compiler", "util"], function (reade
         
         var runner = function (x, k) {
             /*jshint evil: true*/
-            compiler.compile(expander.expand(reader.read(x)), function (js) {
+            compiler.compile(expander.expand(reader.read(x)), handleImport, function (js) {
                 js = js.replace(/\n/g, "\n    ");
                 trace(cat, x, "=", "\n    " + js + "\n" + prettyPrint(eval(js)) + "\n");
                 k();
@@ -86,6 +97,12 @@ require(["reader", "expander", "evaluator", "compiler", "util"], function (reade
     }
     
     function prettyPrint(value) {
+        if (value === undefined) {
+            return "undefined";
+        }
+        if (value === null) {
+            return "null";
+        }
         if (Array.isArray(value)) {
             var items = [];
             for (var i = 0, l = value.length; i < l; i++) {
@@ -102,6 +119,7 @@ require(["reader", "expander", "evaluator", "compiler", "util"], function (reade
     window.onload = function () {
 
         var t = new Date().getTime();
+        var compiles = [];
 
         read("symbols", ["a", "lower", "UPPER", "camelCase", "CamelCase", "j0", "hyphen-ated", "under_scored", "dot.ted", ".length", "úņīčőđē"]);
         
@@ -163,7 +181,7 @@ require(["reader", "expander", "evaluator", "compiler", "util"], function (reade
         
         // ---
         
-        var compiles = [];
+        
         
         compiles.push(["test", "#t"]);
         compiles.push(["literals", ["5", "5.2", "0xFF", '"hello"', "#t"]]);
@@ -181,6 +199,8 @@ require(["reader", "expander", "evaluator", "compiler", "util"], function (reade
         compiles.push(["quote", ["'1", "'()", "'a", "'(1 2 3)", "'(fn () 10)", "''(1 2 3)", "'(a)"]]);
         compiles.push(["quasiquote & unquote", ["(var a 10) `(1 ,a)", "(var a 10) `(1 '(2 ,a))", "(var a 10) (var b '(2 ,a)) `(1 ,b)", "`(1 ,'(2 3) 4)"]]);
         compiles.push(["unquote-splicing", ["`(1 ,@'(2 3) 4)", "`(,@'(5))", "`(1 ,@'() 4)", "(var a '(1 2)) `(5 ,@a)"]]);
+        
+        compiles.push(["importing", ["(import \"prelude\") (id 5)"]]);
         
         var runCompiles = function () {
             if (compiles.length > 0) {
