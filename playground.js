@@ -48,12 +48,18 @@ require(["reader", "expander", "evaluator", "compiler", "util"], function (reade
     
     function handleImport(name, k) {
         console.log("import request:", name);
-        if (name == "prelude") {
+        if (name === "internal") {
             setTimeout(function () {
                 k(expander.expand(reader.read("(var id (fn (x) x))")));
             }, 0);
         } else {
-            throw new Error("Unhandled import '" + name + "'");
+            $.ajax({
+                url: "src/fic/" + name + ".fic",
+                dataType: "text",
+                success: function (data) {
+                    k(expander.expand(reader.read(data)));
+                }
+            });
         }
     }
     
@@ -200,7 +206,7 @@ require(["reader", "expander", "evaluator", "compiler", "util"], function (reade
         compiles.push(["quasiquote & unquote", ["(var a 10) `(1 ,a)", "(var a 10) `(1 '(2 ,a))", "(var a 10) (var b '(2 ,a)) `(1 ,b)", "`(1 ,'(2 3) 4)"]]);
         compiles.push(["unquote-splicing", ["`(1 ,@'(2 3) 4)", "`(,@'(5))", "`(1 ,@'() 4)", "(var a '(1 2)) `(5 ,@a)"]]);
         
-        compiles.push(["importing", ["(import \"prelude\") (id 5)"]]);
+        compiles.push(["importing", ["(import \"internal\") (id 5)", "(import \"prelude\") (id 5)"]]);
         
         var runCompiles = function () {
             if (compiles.length > 0) {

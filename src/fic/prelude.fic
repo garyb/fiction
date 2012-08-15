@@ -1,0 +1,2 @@
+(var id (fn (x) x))
+(var compose (fn (f g) (fn (x) (f (g x)))))
