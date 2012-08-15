@@ -32,6 +32,35 @@ define(function () {
         }
     }
     
+    function printPrettyForm(form) {
+        if (!form) {
+            return "";
+        } else if (form.type === "literal") {
+            var type = typeof form.value;
+            if (type === "string") {
+                return '"' + form.value + '"';
+            }
+            if (type === "boolean") {
+                return form.value ? "#t" : "#f";
+            }
+            return form.value;
+        } else if (form.type === "list") {
+            if (checkForm(form, "quote")) {
+                return "'" + printPrettyForm(form.value[1]);
+            } else if (checkForm(form, "unquote")) {
+                return "," + printPrettyForm(form.value[1]);
+            }
+            var items = [];
+            for (var i = 0, l = form.value.length; i < l; i++) {
+                items[i] = printPrettyForm(form.value[i]);
+            }
+            return "(" + items.join(" ") + ")";
+        } else if (form.type === "symbol") {
+            return form.value;
+        }
+        return null;
+    }
+    
     function checkForm(form, type) {
         if (form.type === "list" && form.value.length > 0) {
             var car = form.value[0];
@@ -43,6 +72,7 @@ define(function () {
     return {
         copyProps: copyProps,
         printRawForm: printRawForm,
+        printPrettyForm: printPrettyForm,
         checkForm: checkForm
     };
     
