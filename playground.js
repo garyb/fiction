@@ -112,7 +112,7 @@ require(["reader", "expander", "evaluator", "compiler", "util"], function (reade
         
         evaluate("quote", ["'1", "'()", "'a", "'(1 2 3)", "'(fn () 10)", "''(1 2 3)"]);
         evaluate("quasiquote & unquote", ["(var a 10) `(1 ,a)", "(var a 10) `(1 '(2 ,a))", "(var a 10) (var b '(2 ,a)) `(1 ,b)", "`(1 ,'(2 3) 4)"]);
-        evaluate("unquote-splicing", ["`(1 ,@'(2 3) 4)", "`(,@'(5))"]);
+        evaluate("unquote-splicing", ["`(1 ,@'(2 3) 4)", "`(,@'(5))", "`(1 ,@'() 4)", "(var a '(1 2)) `(5 ,@a)"]);
         
         // ---
         
@@ -130,7 +130,7 @@ require(["reader", "expander", "evaluator", "compiler", "util"], function (reade
         
         compile("quote", ["'1", "'()", "'a", "'(1 2 3)", "'(fn () 10)", "''(1 2 3)", "'(a)"]);
         compile("quasiquote & unquote", ["(var a 10) `(1 ,a)", "(var a 10) `(1 '(2 ,a))", "(var a 10) (var b '(2 ,a)) `(1 ,b)", "`(1 ,'(2 3) 4)"]);
-        compile("unquote-splicing", ["`(1 ,@'(2 3) 4)", "`(,@'(5))"]);
+        compile("unquote-splicing", ["`(1 ,@'(2 3) 4)", "`(,@'(5))", "`(1 ,@'() 4)", "(var a '(1 2)) `(5 ,@a)"]);
         
         if (!errored) {
             trace("status", "It's all good.", new Date().getTime() - t, "ms.");

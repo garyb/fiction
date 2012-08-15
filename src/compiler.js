@@ -136,7 +136,7 @@ define(["util", "javascript"], function (util, js) {
     
     function compileAssign(args, env, form) {
         if (args[0].type !== "symbol") {
-            error("set!: invalid identifier '" + args[1] + "'", args[1]);
+            error("set!: invalid identifier '" + args[1] + "'", form);
         }
         var assignee = compileSymbol(args[0], env);
         var tmp = compile(args[1], env);
@@ -160,33 +160,79 @@ define(["util", "javascript"], function (util, js) {
         if (args.length !== 1) {
             error("quote: bad syntax", form);
         }
-        var arg = args[0];
+        var result = compileQuoteValue(args[0]);
+        return { value: result, env: env };
+    }
+    
+    function compileQuoteValue(arg) {
         var result = null;
         if (arg.type === "literal") {
             result = arg.value;
         } else if (arg.type === "symbol") {
             result = "symbol(\"" + arg.value + "\")";
         } else if (arg.type === "list") {
-            if (arg.value.length === 0) {
-                result = "[]";
-            } else {
-                // TODO: quote everything inside this list too
-                result = "[ ... ]";
+            var items = [];
+            for (var i = 0, l = arg.value.length; i < l; i++) {
+                items[i] = compileQuoteValue(arg.value[i]);
             }
+            result = "[" + items.join(", ") + "]";
         }
-        
-        return { value: result, env: env };
+        return result;
     }
     
     function compileQuasiQuote(args, env, form) {
-        var result = null;
-        
-        return { value: result, env: env };
+        if (args.length !== 1) {
+            error("quasiquote: bad syntax", form);
+        }
+        return compileQuasiQuotedValue(args[0], env);
     }
     
-    function compileQuasiQuotedValue(form, env) {
+    function compileQuasiQuotedValue(arg, env) {
         var result = null;
-        
+        if (arg.type === "literal") {
+            result = arg.value;
+        } else if (arg.type === "symbol") {
+            result = "symbol(\"" + arg.value + "\")";
+        } else if (checkForm(arg, "unquote")) {
+            if (arg.value.length !== 2) {
+                error("unquote: bad syntax", arg);
+            }
+            return compile(arg.value[1], env);
+        } else if (checkForm(arg, "unquote-splicing")) {
+            error("unquote-splicing: not in list", arg);
+        } else {
+            var outer = [];
+            var items = [];
+            for (var i = 0, l = arg.value.length; i < l; i++) {
+                var f = arg.value[i];
+                if (checkForm(f, "unquote-splicing")) {
+                    if (f.value.length !== 2) {
+                        error("unquote-splicing: bad syntax", f);
+                    }
+                    var splice = compile(f.value[1], env);
+                    if (splice.value !== "[]") {
+                        if (items.length > 0) {
+                            outer.push("[" + items.join(", ") + "]");
+                            items = [];
+                        }
+                        outer.push(splice.value);
+                    }
+                    env = splice.env;
+                } else {
+                    var tmp = compileQuasiQuotedValue(arg.value[i], env);
+                    items.push(tmp.value);
+                    env = tmp.env;
+                }
+            }
+            if (items.length > 0) {
+                outer.push("[" + items.join(", ") + "]");
+            }
+            if (outer.length > 1) {
+                result = "(" + outer.join(").concat(") + ")";
+            } else {
+                result = outer[0];
+            }
+        }
         return { value: result, env: env };
     }
     
@@ -206,7 +252,7 @@ define(["util", "javascript"], function (util, js) {
         };
     }
     
-    function compileArray(args, env, form) {
+    function compileArray(args, env) {
         var tmp = compileAll(args, env);
         return { value: "[" + tmp.value.join(", ") + "]", env: env };
     }
@@ -225,7 +271,7 @@ define(["util", "javascript"], function (util, js) {
         "list": compileArray
     };
     
-    function compileApply(fnf, args, env, form) {
+    function compileApply(fnf, args, env) {
         var tmp = compile(fnf, env);
         var fnv = tmp.value;
         env = tmp.env;
@@ -261,29 +307,40 @@ define(["util", "javascript"], function (util, js) {
         return { value: result, env: env };
     }
     
-    function compileAll(forms, env) {
+    function compileAll0(forms, env) {
         var result = [];
         for (var i = 0, l = forms.length; i < l; i++) {
             var tmp = compile(forms[i], env);
-            result[i] = tmp.value + ";";
+            result[i] = tmp.value;
             env = tmp.env;
         }
-        return { value: result.join("\n"), env: env };
+        return { value: result, env: env };
     }
     
-    function usesSymbolQuote(forms) {
-        // TODO: needs a little testing. at least one case it doesn't cover is symbols in a quoted list, e.g. '(a)
+    function compileAll(forms, env) {
+        var result = compileAll0(forms, env);
+        return { value: result.value.join(";\n") + ";", env: result.env };
+    }
+    
+    function usesSymbolQuote(forms, inQuote) {
+        // TODO: needs a little testing, and not especially elegant. accidentally triggered by `(1 ,'(2 3) 4) and other things.
+        inQuote = inQuote === true;
         for (var i = 0, l = forms.length; i < l; i++) {
             var form = forms[i];
+            if (inQuote && form.type === "symbol") {
+                return true;
+            }
             if (form.type !== "list" || form.value.length === 0) {
                 continue;
             }
             if ((form.value[0].value === "quote" || form.value[0].value === "quasiquote")) {
                 if (form.value[1].type === "symbol") {
                     return true;
+                } else if (form.value[1].type === "list" && usesSymbolQuote(form.value[1].value, true)) {
+                    return true;
                 }
             }
-            if (usesSymbolQuote(form.value)) {
+            if (usesSymbolQuote(form.value, inQuote)) {
                 return true;
             }
         }
