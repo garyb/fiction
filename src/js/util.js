@@ -13,6 +13,14 @@ define(function () {
         return out;
     }
     
+    function createForm(type, value, extras) {
+        if (type !== "literal" && type !== "symbol" && type !== "list") {
+            throw new Error("Form must be a literal, symbol, or list");
+        }
+        var form = { type: type, value: value };
+        return extras ? copyProps(form, extras) : form;
+    }
+    
     function printRawForm(input) {
         if (!input) {
             return "null";
@@ -73,6 +81,7 @@ define(function () {
         copyProps: copyProps,
         printRawForm: printRawForm,
         printPrettyForm: printPrettyForm,
+        createForm: createForm,
         checkForm: checkForm
     };
     

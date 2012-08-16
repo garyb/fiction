@@ -10,13 +10,7 @@ define(["util"], function (util) {
         };
     }
     
-    function createForm(type, value, extras) {
-        if (type !== "literal" && type !== "symbol" && type !== "list") {
-            error("Form must be a literal, symbol, or list")({ lineNum: -1, charNum: -1 });
-        }
-        var form = { type: type, value: value };
-        return extras ? util.copyProps(form, extras) : form;
-    }
+    var createForm = util.createForm;
 
     var skip = { toString: function () { return "{skip}"; } };
 
