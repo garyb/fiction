@@ -4,13 +4,7 @@ define(["util"], function (util) {
 
     "use strict";
     
-    function makeMap(list) {
-        var result = {};
-        for (var i = 0, value = null; (value = list[i]); i++) {
-            result[value] = value;
-        }
-        return result;
-    }
+    var makeMap = util.makeMap;
     
     var keywords = makeMap([
         "this",

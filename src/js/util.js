@@ -77,12 +77,21 @@ define(function () {
         return false;
     }
     
+    function makeMap(list) {
+        var result = {};
+        for (var i = 0, value = null; (value = list[i]); i++) {
+            result[value] = value;
+        }
+        return result;
+    }
+    
     return {
         copyProps: copyProps,
         printRawForm: printRawForm,
         printPrettyForm: printPrettyForm,
         createForm: createForm,
-        checkForm: checkForm
+        checkForm: checkForm,
+        makeMap: makeMap
     };
     
 });
