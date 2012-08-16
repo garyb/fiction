@@ -188,7 +188,7 @@ require(["reader", "expander", "evaluator", "compiler", "util"], function (reade
         
         compiles.push(["test", "#t"]);
         compiles.push(["literals", ["5", "5.2", "0xFF", '"hello"', "#t"]]);
-        compiles.push(["variables", ["(var a 500) a", "(var a \"one\") (var a \"two\") a"]]);
+        compiles.push(["variables", ["(var a 500) a", "(var a \"one\") (var a \"two\") (var a1 'f) (var a \"three\") (fn (a) a) a"]]);
         
         compiles.push(["function defs", ["(fn () 5)", "(fn (x) x)", "(fn (x y) y)", "(fn x x)", "(fn x (var x 5))"]]);
         compiles.push(["function application", ["(var id (fn (x) x)) (id 5)", "(var id-args (fn x x)) (id-args 1 2 3)"]]);

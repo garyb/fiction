@@ -53,6 +53,7 @@ define(["util", "javascript"], function (util, js) {
         }
         var result = util.copyProps(env, {});
         result[id] = jsid;
+        result[jsid] = jsid;
         return { id: jsid, env: result };
     }
     
