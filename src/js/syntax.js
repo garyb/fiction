@@ -142,7 +142,7 @@ define(["util"], function (util) {
      * primitive `quasiquote`. The valid form for `quasiquote` is 
      * `(quasiquote datum)` where `datum` is any s-expression. The syntax of any
      * `unquote` or `unquote-splicing` forms within datum are also checked, 
-     * although the unquoted expressions are not. The  full version of the form 
+     * although the unquoted expressions are not. The full version of the form 
      * being checked is provided as `expr` for use in error messages.
      */
     function checkQuasiQuote(atoms, expr) {
@@ -200,6 +200,50 @@ define(["util"], function (util) {
             error(type + ": not in quasiquote", arguments[1]);
         };
     }
+    
+    /**
+     * Checks whether `atoms` are valid values for an application of the
+     * primitive `define-syntax`. The valid form for `define-syntax` is 
+     * `(define-syntax id transformer)` where `id` is a symbol and transformer 
+     * is a `syntax-rules` expression. The full version of the form 
+     * being checked is provided as `expr` for use in error messages.
+     */
+    function checkDefineSyntax(atoms, expr) {
+        if (atoms.length === 0) {
+            error("define-syntax: empty expression", expr);
+        }
+        if (atoms.length === 1) {
+            error("define-syntax: missing transformer definition", expr);
+        }
+        if (atoms.length > 2) {
+            error("define-syntax: too many arguments", expr);
+        }
+        if (!util.checkForm(atoms[1], "syntax-rules")) {
+            error("define-syntax: transformer should be a `syntax-rules` form");
+        }
+    }
+    
+    function checkSyntaxTransformer(atoms, expr) {
+        if (atoms.length === 0) {
+            error("syntax-rules: empty expression", expr);
+        }
+        if (atoms.length === 1) {
+            error("syntax-rules: missing pattern and template definitions", expr);
+        }
+        if (atoms.length > 2) {
+            error("syntax-rules: too many arguments", expr);
+        }
+        var symbols = atoms[0];
+        if (symbols.type !== "list") {
+            error("syntax-rules: invalid reserved symbol list", symbols);
+            for (var i = 0, l = symbols.value.length; i < l; i++) {
+                if (symbols.value[i].type !== "symbol") {
+                    error("syntax-rules: invalid reserved symbol", symbols.value[i]);
+                }
+            }
+        }
+        // TODO: check pattern/template list conforms
+    }
 
     return {
         checks: {
@@ -210,7 +254,9 @@ define(["util"], function (util) {
             "quote": checkQuote,
             "quasiquote": checkQuasiQuote,
             "unquote": quasiQuoteError("unquote"),
-            "unquote-splicing": quasiQuoteError("unquote-splicing")
+            "unquote-splicing": quasiQuoteError("unquote-splicing"),
+            "define-syntax": checkDefineSyntax,
+            "syntax-rules": checkSyntaxTransformer
         }
     };
 });
