@@ -1,6 +1,6 @@
 /*jshint bitwise: true, camelcase: true, curly: true, eqeqeq: true, forin: true, immed: true, indent: 4, latedef: true, newcap: true, noarg: true, noempty: true, nonew: true, regexp: true, undef: true, unused: true, strict: true*/
 /*global define*/
-define(["util"], function (util) {
+define(["util", "syntax"], function (util, syntax) {
 
     "use strict";
     
@@ -196,6 +196,10 @@ define(["util"], function (util) {
                 var car = form.value[0];
                 var cdr = form.value.slice(1);
                 var sf = car.type === "symbol" ? specialForms[car.value] : null;
+                var syntaxCheck = syntax.checks[car.value];
+                if (syntaxCheck) {
+                    syntaxCheck(cdr, form);
+                }
                 if (sf) {
                     return sf(cdr, env, form);
                 } else {
