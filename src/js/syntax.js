@@ -245,7 +245,15 @@ define(["util"], function (util) {
         }
     }
     
-    function checkSyntaxTransformer(atoms, expr) {
+    /**
+     * Checks whether `atoms` are valid values for an application of the
+     * primitive `syntax-rules`. The valid form for `syntax-rules` is 
+     * `(syntax-rules (reserved ...) ((pattern template) ...)` where 
+     * `reserved ...` is a list of symbols, `pattern` is a list starting with a
+     * symbol, and `template` is any s-expression. The full version of the form 
+     * being checked is provided as `expr` for use in error messages.
+     */
+    function checkSyntaxRules(atoms, expr) {
         if (atoms.length === 0) {
             error("syntax-rules: empty expression", expr);
         }
@@ -264,7 +272,34 @@ define(["util"], function (util) {
                 }
             }
         }
-        // TODO: check pattern/template list conforms
+        var rules = atoms[1];
+        if (rules.type !== "list") {
+            error("syntax-rules: rules should be a list", rules);
+        }
+        if (rules.value.length === 0) {
+            error("syntax-rules: empty rules list", rules);
+        }
+        for (var j = 0, m = rules.value.length; j < m; j++) {
+            var rule = rules.value[j];
+            if (rule.type !== "list") {
+                error("syntax-rules: invalid rule", rule);
+            }
+            if (rule.value.length === 0) {
+                error("syntax-rules: empty rule", rule);
+            }
+            if (rule.value.length === 1) {
+                error("syntax-rules: rule missing template definition", rule);
+            }
+            if (rule.value.length > 2) {
+                error("syntax-rules: rule has too many arguments", rule);
+            }
+            if (rule.value[0].type !== "list") {
+                error("syntax-rules: pattern should be a list expression", rule);
+            }
+            if (rule.value[0].value[0].type !== "symbol") {
+                error("syntax-rules: pattern should start with an identifier", rule);
+            }
+        }
     }
 
     return {
@@ -279,7 +314,7 @@ define(["util"], function (util) {
             "unquote": quasiQuoteError("unquote"),
             "unquote-splicing": quasiQuoteError("unquote-splicing"),
             "define-syntax": checkDefineSyntax,
-            "syntax-rules": checkSyntaxTransformer
+            "syntax-rules": checkSyntaxRules
         }
     };
 });
