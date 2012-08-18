@@ -1,0 +1,23 @@
+body {
+  background: #ddd;
+  color: #444;
+  margin: 0;
+  padding: 0;
+}
+
+h2 {
+  font: 16px Arial, Helvetica, sans-serif;
+  font-weight: bold;
+  margin: 10px;
+  padding: 0;
+}
+
+pre {
+  font: 11px/16px "DejaVu Sans Mono", Consolas, monospace;
+}
+
+#output, #status {
+  background: #fafafa;
+  padding: 10px;
+  margin: 10px;
+}

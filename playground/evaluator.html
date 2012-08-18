@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+
+    <title>Playground - Evaluator</title>
+
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <script type="text/javascript" src="../lib/require.js" data-main="js/play-evaluator"></script>
+    <script type="text/javascript">
+        require.config({
+            baseUrl: "../src/js/",
+            paths: {
+                "playground": "../../playground/js/playground",
+                "play-evaluator": "../../playground/js/play-evaluator"
+            }
+        });
+    </script>
+    <link rel="stylesheet" href="style.css" />
+  
+</head>
+
+<body>
+
+    <h2>Evaluator</h2>
+    <pre id="output"></pre>
+    <pre id="status"></pre>
+  
+</body>
+</html>

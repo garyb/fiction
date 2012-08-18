@@ -1,0 +1,8 @@
+(define-syntax do!
+  (syntax-rules ()
+    ((_ form ...) ((fn () form ...)))))
+
+(define-syntax do
+  (syntax-rules ()
+    ((_ form) form)
+    ((_ form ...) (do! form ...))))
