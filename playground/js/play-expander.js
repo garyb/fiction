@@ -67,6 +67,8 @@ require(["playground", "reader", "expander", "util"], function (playground, read
         
         things.push(["special form redefinition", ["(var set! (fn (x) `(bad-idea ,x))) (set! 100)"]]);
         
+        things.push(["macros", ["(import \"macros\") (do! 1) (do! 1 2 3)"]]);
+        
         var runThings = function () {
             if (things.length > 0) {
                 var params = things.shift();

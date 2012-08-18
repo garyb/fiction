@@ -1,4 +1,4 @@
-/*jshint bitwise: true, camelcase: true, curly: true, eqeqeq: true, forin: true, immed: true, indent: 4, latedef: true, newcap: true, noarg: true, noempty: true, nonew: true, regexp: true, undef: true, unused: true, strict: true*/
+/*jshint bitwise: true, camelcase: true, curly: true, eqeqeq: true, forin: true, immed: true, indent: 4, latedef: true, newcap: true, noarg: true, noempty: true, nonew: true, regexp: true, undef: true, strict: true*/
 /*global define*/
 define(["util", "syntax"], function (util, syntax) {
 
@@ -135,13 +135,13 @@ define(["util", "syntax"], function (util, syntax) {
         return { value: [form], env: env };
     }
     
-    /*function expandDefineSyntax(atoms, imp, impChain) {
+    function expandDefineSyntax(atoms, env, imp, impChain) {
         // TODO: require that free identifiers in templates have already been declared to ensure predictable expansion
-        var id = getSymbolValue(atoms[0]);
+        var formId = atoms[0].value;
         var rules = atoms[1];
-        var reserved = atoms[1].value[1].value.map(getSymbolValue);
+        var reserved = atoms[1].value[1].value.map(function (x) { return x.value; });
         
-        console.log(id, reserved);
+        console.log(formId, reserved);
         rules = rules.value.slice(2);
         
         for (var i = 0, l = rules.length; i < l; i++) {
@@ -152,8 +152,8 @@ define(["util", "syntax"], function (util, syntax) {
             console.log("tem:", util.printPretty(template));
         }
         
-        return [];
-    }*/
+        return { value: [], env: env };
+    }
     
     // ------------------------------------------------------------------------
     //  Import analysis
@@ -195,8 +195,8 @@ define(["util", "syntax"], function (util, syntax) {
         "var": expandVar,
         "fn": expandFunc,
         "quote": expandQuote,
-        "quasiquote": expandQuasiQuote
-        //"define-syntax": expandDefineSyntax
+        "quasiquote": expandQuasiQuote,
+        "define-syntax": expandDefineSyntax
     };
 
     function expand(form, env, imp, impChain) {
