@@ -6,7 +6,7 @@ define(["util"], function (util) {
 
     function error(msg, expr) {
         // TODO: add line/char details to forms for better errors
-        throw new Error(msg + " @ " + util.printPrettyForm(expr));
+        throw new Error(msg + " @ " + util.printPretty(expr));
     }
 
     /**

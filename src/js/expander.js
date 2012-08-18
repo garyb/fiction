@@ -52,8 +52,8 @@ define(["util"], function (util) {
             }
             var pattern = rule.value[0];
             var template = rule.value[1];
-            console.log("pat:", util.printPrettyForm(pattern));
-            console.log("tem:", util.printPrettyForm(template));
+            console.log("pat:", util.printPretty(pattern));
+            console.log("tem:", util.printPretty(template));
         }
         
         return null;

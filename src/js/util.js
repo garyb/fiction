@@ -40,7 +40,7 @@ define(function () {
         }
     }
     
-    function printPrettyForm(form) {
+    function printPretty(form) {
         if (!form) {
             return "";
         } else if (form.type === "literal") {
@@ -54,17 +54,24 @@ define(function () {
             return form.value;
         } else if (form.type === "list") {
             if (checkForm(form, "quote")) {
-                return "'" + printPrettyForm(form.value[1]);
+                return "'" + printPretty(form.value[1]);
             } else if (checkForm(form, "unquote")) {
-                return "," + printPrettyForm(form.value[1]);
+                return "," + printPretty(form.value[1]);
             }
             var items = [];
             for (var i = 0, l = form.value.length; i < l; i++) {
-                items[i] = printPrettyForm(form.value[i]);
+                items[i] = printPretty(form.value[i]);
             }
             return "(" + items.join(" ") + ")";
         } else if (form.type === "symbol") {
             return form.value;
+        } else if (form.type === "func") {
+            var fn = form.value;
+            if (Array.isArray(fn.args)) {
+                return "#(fn (" + fn.args.join(" ") + "))"; 
+            } else {
+                return "#(fn " + fn.args + ")"; 
+            }
         }
         return null;
     }
@@ -88,7 +95,7 @@ define(function () {
     return {
         copyProps: copyProps,
         printRawForm: printRawForm,
-        printPrettyForm: printPrettyForm,
+        printPretty: printPretty,
         createForm: createForm,
         checkForm: checkForm,
         makeMap: makeMap

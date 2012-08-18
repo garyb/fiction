@@ -9,7 +9,7 @@ require(["playground", "reader", "expander", "util"], function (playground, read
     
     function expand(name, input) {
         run(name, input, function (x, k) {
-            trace("output", x, "=", (expander.expand(reader.read(x))).map(util.printPrettyForm).join(" "));
+            trace("output", x, "=", (expander.expand(reader.read(x))).map(util.printPretty).join(" "));
             k();
         });
     }
