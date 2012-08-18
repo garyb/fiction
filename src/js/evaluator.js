@@ -220,41 +220,7 @@ define(["util", "syntax"], function (util, syntax) {
         }
         return { value: result, env: env };
     }
-    
-    function print(value) {
-        if (value === null) {
-            return "";
-        } else if (value.type === "literal") {
-            var type = typeof value.value;
-            if (type === "string") {
-                // TODO: needs some work to produce valid strings
-                return '"' + value.value + '"';
-            }
-            return value.value;
-        } else if (value.type === "func") {
-            var fn = value.value;
-            if (Array.isArray(fn.args)) {
-                return "(fn (" + fn.args.join(" ") + ") ...)"; 
-            } else {
-                return "(fn " + fn.args + " ...)"; 
-            }
-        } else if (value.type === "list") {
-            if (checkForm(value, "quote")) {
-                return "'" + print(value.value[1]);
-            } else if (checkForm(value, "unquote")) {
-                return "," + print(value.value[1]);
-            }
-            var items = [];
-            for (var i = 0, l = value.value.length; i < l; i++) {
-                items[i] = print(value.value[i]);
-            }
-            return "[" + items.join(" ") + "]";
-        } else if (value.type === "symbol") {
-            return value.value;
-        }
-        error("Unknown value", value);
-    }
 
-    return { evaluate: evaluateAll, print: print };
+    return { evaluate: evaluateAll };
 
 });

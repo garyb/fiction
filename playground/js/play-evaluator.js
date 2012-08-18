@@ -1,6 +1,6 @@
 /*jshint browser: true, devel: true, bitwise: true, camelcase: true, curly: true, eqeqeq: true, forin: true, immed: true, indent: 4, latedef: true, newcap: true, noarg: true, noempty: true, nonew: true, regexp: true, undef: true, unused: true, strict: true*/
 /*global require*/
-require(["playground", "reader", "expander", "evaluator"], function (playground, reader, expander, evaluator) {
+require(["playground", "reader", "expander", "evaluator", "util"], function (playground, reader, expander, evaluator, util) {
 
     "use strict";
     
@@ -9,7 +9,7 @@ require(["playground", "reader", "expander", "evaluator"], function (playground,
     
     function evaluate(name, input) {
         run(name, input, function (x, k) {
-            trace("output", x, "=", evaluator.print(evaluator.evaluate(expander.expand(reader.read(x))).value));
+            trace("output", x, "=", util.printPretty(evaluator.evaluate(expander.expand(reader.read(x))).value));
             k();
         });
     }
