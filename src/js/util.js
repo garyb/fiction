@@ -59,6 +59,8 @@ define(function () {
                 return "`" + printPretty(form.value[1]);
             } else if (checkForm(form, "unquote")) {
                 return "," + printPretty(form.value[1]);
+            } else if (checkForm(form, "unquote-splicing")) {
+                return ",@" + printPretty(form.value[1]);
             }
             var items = [];
             for (var i = 0, l = form.value.length; i < l; i++) {
