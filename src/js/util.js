@@ -17,6 +17,27 @@ define(function () {
         if (type !== "literal" && type !== "symbol" && type !== "list") {
             throw new Error("Form must be a literal, symbol, or list");
         }
+        if (value === null || value === undefined) {
+            throw new Error("Form value cannot be null or undefined");
+        }
+        if (type === "list" && !Array.isArray(value)) {
+            throw new Error("List should have an array value");
+        }
+        if (type === "symbol") {
+            if (typeof value !== "string") {
+                throw new Error("Symbol should have a string value");
+            }
+            if (value.length === 0) {
+                throw new Error("Symbol value is empty");
+            }
+        }
+        if (type === "literal") {
+            if ((typeof value !== "string") && 
+                (typeof value !== "number") && 
+                (typeof value !== "boolean")) {
+                throw new Error("Literal value should be string, number, or boolean");
+            }
+        }
         var form = { type: type, value: value };
         return extras ? copyProps(form, extras) : form;
     }
