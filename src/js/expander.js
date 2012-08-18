@@ -25,62 +25,41 @@ define(["util", "syntax"], function (util, syntax) {
     //  Expand transforms
     // ------------------------------------------------------------------------
     
-    function expandImport(atoms, form, imp, k) {
-        expandNextImport(atoms, form, [], imp, k);
-    }
-    
-    function expandNextImport(atoms, form, result, imp, k) {
-        while (atoms.length > 0 && imp.done.hasOwnProperty(atoms[0].value)) {
-            atoms.shift();
+    function expandImport(atoms, form, imp) {
+        var result = [];
+        for (var i = 0, l = atoms.length; i < l; i++) {
+            result = result.concat(imp[atoms[i].value]);
         }
-        if (atoms.length === 0) {
-            k(result);
-        } else {
-            imp.handleImport(atoms[0].value, function (tail) {
-                imp.done[atoms[0].value] = true;
-                expandNextImport(atoms.slice(1), form, result.concat(tail), imp, k);
-            });
-        }
+        return result;
     }
     
-    function expandQuote(atoms, form, imp, k) {
-        k([form]);
+    function expandQuote() {
+        return arguments[1];
     }
     
-    function expandQuasiQuote(atoms, form, imp, k) {
-        expandQuasiQuoteValue(atoms[0], imp, function (value) {
-            k(createForm("list", [createForm("symbol", "quasiquote"), value]));
-        });
+    function expandQuasiQuote(atoms, form, imp) {
+        var sym = createForm("symbol", "quasiquote");
+        var val = expandQuasiQuoteValue(atoms[0], imp);
+        return createForm("list", [sym].concat(val));
     }
     
-    function expandQuasiQuoteValue(form, imp, k) {
-        if (form.type !== "list") {
-            k(form);
-        } else {
+    function expandQuasiQuoteValue(form, imp) {
+        if (form.type === "list") {
+            var values = [];
             if (checkForm(form, "unquote") || checkForm(form, "unquote-splicing")) {
-                var sym = form.value[0];
-                expand(form.value[1], imp, function (es) {
-                    k(createForm("list", [sym].concat(es)));
-                });
+                values = [form.value[0]];
+                values = values.concat(expand(form.value[1], imp));
             } else {
-                expandQuasiQuoteValues(form.value, [], imp, function (es) {
-                    k(createForm("list", es));
-                });
+                for (var i = 0, l = form.value.length; i < l; i++) {
+                    values = values.concat(expandQuasiQuoteValue(form.value[i], imp));
+                }
             }
+            return [createForm("list", values)];
         }
+        return [form];
     }
     
-    function expandQuasiQuoteValues(forms, result, imp, k) {
-        if (forms.length === 0) {
-            k(result);
-        } else {
-            expandQuasiQuoteValue(forms[0], imp, function (e) {
-                expandQuasiQuoteValues(forms.slice(1), result.concat([e]), imp, k);
-            });
-        }
-    }
-    
-    /*function expandDefineSyntax(atoms, imp, k) {
+    /*function expandDefineSyntax(atoms, imp) {
         // TODO: require that free identifiers in templates have already been declared to ensure predictable expansion
         var id = getSymbolValue(atoms[0]);
         var rules = atoms[1];
@@ -97,8 +76,39 @@ define(["util", "syntax"], function (util, syntax) {
             console.log("tem:", util.printPretty(template));
         }
         
-        k([]);
+        return [];
     }*/
+    
+    // ------------------------------------------------------------------------
+    //  Import analysis
+    // ------------------------------------------------------------------------
+    
+    function findImports(form, inQuasiQuote) {
+        if (inQuasiQuote === true && (checkForm(form, "unquote") || checkForm(form, "unquote-splicing"))) {
+            return findImports(form.value[1], false);
+        }
+        if (inQuasiQuote !== true && checkForm(form, "quote")) {
+            return [];
+        }
+        if (checkForm(form, "quasiquote")) {
+            return findImports(form.value[1], true);
+        }
+        if (checkForm(form, "import")) {
+            return form.value.slice(1).map(function (x) { return x.value; });
+        }
+        if (form.type === "list") {
+            return findAllImports(form.value, inQuasiQuote);
+        }
+        return [];
+    }
+    
+    function findAllImports(forms, inQuasiQuote) {
+        var result = [];
+        for (var i = 0, l = forms.length; i < l; i++) {
+            result = result.concat(findImports(forms[i], inQuasiQuote));
+        }
+        return result;
+    }
     
     // ------------------------------------------------------------------------
     //  Main
@@ -111,7 +121,7 @@ define(["util", "syntax"], function (util, syntax) {
         //"define-syntax": expandDefineSyntax
     };
 
-    function expand(form, imp, k) {
+    function expand(form, imp) {
         if (form.type === "list" && form.value.length > 0) {
             var car = form.value[0];
             var cdr = form.value.slice(1);
@@ -122,30 +132,41 @@ define(["util", "syntax"], function (util, syntax) {
                 }
                 var expander = expanders[car.value];
                 if (expander) {
-                    expander(cdr, form, imp, k);
-                    return;
+                    return expander(cdr, form, imp);
                 }
             }
-            expandAll(form.value, [], imp, function (result) {
-                k(createForm("list", result));
-            });
-        } else {
-            k(form);
+            return createForm("list", expandAll(form.value, imp));
         }
+        return form;
     }
     
-    function expandAll(seq, result, imp, k) {
-        if (seq.length === 0) {
-            k(result);
-        } else {
-            expand(seq[0], imp, function (e) {
-                expandAll(seq.slice(1), result.concat(e), imp, k);
-            });
+    function expandAll(seq, imp) {
+        var result = [];
+        for (var i = 0, l = seq.length; i < l; i++) {
+            result = result.concat(expand(seq[i], imp));
         }
+        return result;
     }
     
     function expandScript(forms, handleImport, k) {
-        expandAll(forms, [], { done: {}, handleImport: handleImport }, k);
+        var imports = findAllImports(forms);
+        var imported = {};
+        var loadNextImport = function () {
+            while (imports.length > 0 && imported.hasOwnProperty(imports[0])) {
+                imports.shift();
+            }
+            if (imports.length > 0) {
+                var name = imports.shift();
+                handleImport(name, function (splice) {
+                    imports = imports.concat(findAllImports(splice));
+                    imported[name] = splice;
+                    loadNextImport();
+                });
+            } else {
+                k(expandAll(forms, imported));
+            }
+        };
+        loadNextImport();
     }
 
     return { expand: expandScript };
