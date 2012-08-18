@@ -19,10 +19,6 @@ define(["util"], function (util) {
         // TODO: add line/char details to forms for better errors
         throw new Error(msg + " @ " + util.printRawForm(form));
     }
-       
-    function expandComment() {
-        return null;
-    }
     
     function getSymbolValue(form) {
         if (form.type !== "symbol") {
@@ -60,7 +56,6 @@ define(["util"], function (util) {
     }
     
     var expanders = {
-        "comment": expandComment,
         "define-syntax": expandDefineSyntax
     };
 
