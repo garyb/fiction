@@ -37,9 +37,6 @@ define(["util", "syntax"], function (util, syntax) {
     }
     
     function evalVar(args, env) {
-        if (args[0].type !== "symbol") {
-            error("var: invalid identifier '" + args[1] + "'", args[1]);
-        }
         var id = args[0].value;
         env = put(env, id, null);
         var tmp = evaluate(args[1], env);
@@ -48,41 +45,27 @@ define(["util", "syntax"], function (util, syntax) {
     
     function evalFunc(args, env, form) {
         var result = null;
-        if (args.length !== 2) {
-            error("fn: bad syntax", form);
-        }
         var body = args.slice(1);
         if (args[0].type === "list") {
             var argNames = [];
             var argsList = args[0].value;
             for (var i = 0, l = argsList.length; i < l; i++) {
-                if (argsList[i].type !== "symbol") {
-                    error("fn: invalid argument definition", argsList[i]);
-                }
                 argNames[i] = argsList[i].value;
             }
             result = createValue("func", { body: body, args: argNames, env: env }, form);
         } else if (args[0].type === "symbol") {
             result = createValue("func", { body: body, args: args[0].value, env: env }, form);
-        } else {
-            error("fn: invalid arguments definition", args[0]);
         }
         return { value: result, env: env };
     }
     
     function evalAssign(args, env, form) {
-        if (args[0].type !== "symbol") {
-            error("set!: invalid identifier '" + args[1] + "'", args[1]);
-        }
         var id = args[0].value;
         get(env, id, args[0]);
         return evalVar(args, env, form);
     }  
     
     function evalIf(args, env, form) {
-        if (args.length !== 3) {
-            error("if: bad syntax", form);
-        }
         var tmp = evaluate(args[0], env);
         var testv = tmp.value;
         env = tmp.env;
@@ -93,17 +76,11 @@ define(["util", "syntax"], function (util, syntax) {
         }
     }
     
-    function evalQuote(args, env, form) {
-        if (args.length !== 1) {
-            error("quote: bad syntax", form);
-        }
+    function evalQuote(args, env) {
         return { value: args[0], env: env };
     }
     
-    function evalQuasiQuote(args, env, form) {
-        if (args.length !== 1) {
-            error("quasiquote: bad syntax", form);
-        }
+    function evalQuasiQuote(args, env) {
         return { value: evalQuasiQuotedValue(args[0], env), env: env };
     }    
     
@@ -112,24 +89,13 @@ define(["util", "syntax"], function (util, syntax) {
             return createValue(form.type, form.value, form);
         }
         if (checkForm(form, "unquote")) {
-            if (form.value.length !== 2) {
-                error("unquote: bad syntax", form);
-            }
             return evaluate(form.value[1], env).value;
-        } else if (checkForm(form, "unquote-splicing")) {
-            error("unquote-splicing: not in list", form);
         }
         var result = [];
         for (var i = 0, l = form.value.length; i < l; i++) {
             var f = form.value[i];
             if (checkForm(f, "unquote-splicing")) {
-                if (f.value.length !== 2) {
-                    error("unquote-splicing: bad syntax", f);
-                }
                 var v = evalQuasiQuotedValue(evaluate(f.value[1], env).value, env);
-                if (v.type !== "list") {
-                    error("unquote-splicing: expects argument of type list", f);
-                }
                 Array.prototype.push.apply(result, v.value);
             } else {
                 result.push(evalQuasiQuotedValue(f, env));
@@ -138,21 +104,13 @@ define(["util", "syntax"], function (util, syntax) {
         return createValue("list", result, form);
     }
     
-    function quasiQuoteScopeError(type) {
-        return function () {
-            error(type + ": not in quasiquote", arguments[2]);
-        };
-    }
-    
     var specialForms = {
         "var": evalVar,
         "fn": evalFunc,
         "set!": evalAssign,
         "if": evalIf,
         "quote": evalQuote,
-        "quasiquote": evalQuasiQuote,
-        "unquote": quasiQuoteScopeError("unquote"),
-        "unquote-splicing": quasiQuoteScopeError("unquote-splicing")
+        "quasiquote": evalQuasiQuote
     };
     
     function evalApply(fnf, args, env, form) {
