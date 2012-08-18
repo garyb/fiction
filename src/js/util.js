@@ -55,6 +55,8 @@ define(function () {
         } else if (form.type === "list") {
             if (checkForm(form, "quote")) {
                 return "'" + printPretty(form.value[1]);
+            } else if (checkForm(form, "quasiquote")) {
+                return "`" + printPretty(form.value[1]);
             } else if (checkForm(form, "unquote")) {
                 return "," + printPretty(form.value[1]);
             }
