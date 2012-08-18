@@ -35,7 +35,7 @@ require(["playground", "reader", "expander", "util"], function (playground, read
         
         var things = [];
 
-        /*things.push(["symbols", ["a", ".length"]]);
+        things.push(["symbols", ["a", ".length"]]);
         things.push(["literals", ["5", "5.2", "0xFF", '"word"']]);
         things.push(["comments", ["; sup?"]]);
         
@@ -46,7 +46,7 @@ require(["playground", "reader", "expander", "util"], function (playground, read
         things.push(["quote", ["'1", "'()", "'a", "'(1 2 3)", "'(fn () 10)", "''(1 2 3)"]]);
         things.push(["quasiquote & unquote", ["(var a 10) `(1 ,a)", "(var a 10) `(1 '(2 ,a))", "(var a 10) (var b '(2 ,a)) `(1 ,b)", "`(1 ,'(2 3) 4)"]]);
         things.push(["unquote-splicing", ["`(1 ,@'(2 3) 4)", "`(,@'(5))", "`(1 ,@'() 4)", "(var a '(1 2)) `(5 ,@a)"]]);
-        */
+        
         things.push(["imports", ["(import \"import-test\")", 
                                  "(import \"import-test\" \"import-test\")", 
                                  "(import \"import-test\") (import \"import-test\")",
@@ -56,7 +56,10 @@ require(["playground", "reader", "expander", "util"], function (playground, read
                                  "`,(import \"import-test\")",
                                  "`(,@(import \"import-test\"))",
                                  "`('(,(import \"import-test\")))",
-                                 "`(,'((import \"import-test\")))"]]);
+                                 "`(,'((import \"import-test\")))"]]);    
+                                 
+        things.push(["chain imports", ["(import \"chain-import-test\")"]]);
+        things.push(["recursive imports", ["(import \"recursive-import-test\")", "(import \"recursive-import-test-a\")"]]);
         
         var runThings = function () {
             if (things.length > 0) {

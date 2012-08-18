@@ -25,10 +25,15 @@ define(["util", "syntax"], function (util, syntax) {
     //  Expand transforms
     // ------------------------------------------------------------------------
     
-    function expandImport(atoms, form, imp) {
+    function expandImport(atoms, form, imp, impChain) {
         var result = [];
         for (var i = 0, l = atoms.length; i < l; i++) {
-            result = result.concat(imp[atoms[i].value]);
+            var name = atoms[i].value;
+            if (!impChain.hasOwnProperty(name)) {
+                impChain = util.copyProps(impChain, {});
+                impChain[name] = true;
+                result = result.concat(expandAll(imp[name], imp, impChain));
+            }
         }
         return result;
     }
@@ -37,21 +42,21 @@ define(["util", "syntax"], function (util, syntax) {
         return arguments[1];
     }
     
-    function expandQuasiQuote(atoms, form, imp) {
+    function expandQuasiQuote(atoms, form, imp, impChain) {
         var sym = createForm("symbol", "quasiquote");
-        var val = expandQuasiQuoteValue(atoms[0], imp);
+        var val = expandQuasiQuoteValue(atoms[0], imp, impChain);
         return createForm("list", [sym].concat(val));
     }
     
-    function expandQuasiQuoteValue(form, imp) {
+    function expandQuasiQuoteValue(form, imp, impChain) {
         if (form.type === "list") {
             var values = [];
             if (checkForm(form, "unquote") || checkForm(form, "unquote-splicing")) {
                 values = [form.value[0]];
-                values = values.concat(expand(form.value[1], imp));
+                values = values.concat(expand(form.value[1], imp, impChain));
             } else {
                 for (var i = 0, l = form.value.length; i < l; i++) {
-                    values = values.concat(expandQuasiQuoteValue(form.value[i], imp));
+                    values = values.concat(expandQuasiQuoteValue(form.value[i], imp, impChain));
                 }
             }
             return [createForm("list", values)];
@@ -59,7 +64,7 @@ define(["util", "syntax"], function (util, syntax) {
         return [form];
     }
     
-    /*function expandDefineSyntax(atoms, imp) {
+    /*function expandDefineSyntax(atoms, imp, impChain) {
         // TODO: require that free identifiers in templates have already been declared to ensure predictable expansion
         var id = getSymbolValue(atoms[0]);
         var rules = atoms[1];
@@ -121,7 +126,7 @@ define(["util", "syntax"], function (util, syntax) {
         //"define-syntax": expandDefineSyntax
     };
 
-    function expand(form, imp) {
+    function expand(form, imp, impChain) {
         if (form.type === "list" && form.value.length > 0) {
             var car = form.value[0];
             var cdr = form.value.slice(1);
@@ -132,18 +137,18 @@ define(["util", "syntax"], function (util, syntax) {
                 }
                 var expander = expanders[car.value];
                 if (expander) {
-                    return expander(cdr, form, imp);
+                    return expander(cdr, form, imp, impChain);
                 }
             }
-            return createForm("list", expandAll(form.value, imp));
+            return createForm("list", expandAll(form.value, imp, impChain));
         }
         return form;
     }
     
-    function expandAll(seq, imp) {
+    function expandAll(seq, imp, impChain) {
         var result = [];
         for (var i = 0, l = seq.length; i < l; i++) {
-            result = result.concat(expand(seq[i], imp));
+            result = result.concat(expand(seq[i], imp, impChain));
         }
         return result;
     }
@@ -163,7 +168,7 @@ define(["util", "syntax"], function (util, syntax) {
                     loadNextImport();
                 });
             } else {
-                k(expandAll(forms, imported));
+                k(expandAll(forms, imported, {}));
             }
         };
         loadNextImport();

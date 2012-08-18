@@ -1,0 +1,3 @@
+(import "recursive-import-test")
+
+'hello
