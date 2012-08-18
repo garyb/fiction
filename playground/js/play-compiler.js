@@ -8,29 +8,23 @@ require(["playground", "reader", "expander", "compiler"], function (playground, 
     var run = playground.run;
     
     function handleImport(name, k) {
-        if (name === "internal") {
-            setTimeout(function () {
-                k(expander.expand(reader.read("(var id (fn (x) x))")));
-            }, 0);
-        } else {
-            $.ajax({
-                url: "fic/" + name + ".fic",
-                dataType: "text",
-                success: function (data) {
-                    k(expander.expand(reader.read(data)));
-                },
-                error: function () {
-                    throw arguments[2];
-                }
-            });
-        }
+        $.ajax({
+            url: "fic/" + name + ".fic",
+            dataType: "text",
+            success: function (data) {
+                k(reader.read(data));
+            },
+            error: function () {
+                throw arguments[2];
+            }
+        });
     }
     
     function compile(name, input, k) {
         run(name, input, function (x, k) {
-            /*jshint evil: true*/
-            compiler.compile(expander.expand(reader.read(x)), handleImport, function (js) {
-                js = js.replace(/\n/g, "\n    ");
+            expander.expand(reader.read(x), handleImport, function (result) {
+                /*jshint evil: true*/
+                var js = compiler.compile(result).replace(/\n/g, "\n    ");
                 trace("output", x, "=", "\n    " + js + "\n" + prettyPrint(eval(js)) + "\n");
                 k();
             });
@@ -79,7 +73,7 @@ require(["playground", "reader", "expander", "compiler"], function (playground, 
         compiles.push(["quasiquote & unquote", ["(var a 10) `(1 ,a)", "(var a 10) `(1 '(2 ,a))", "(var a 10) (var b '(2 ,a)) `(1 ,b)", "`(1 ,'(2 3) 4)"]]);
         compiles.push(["unquote-splicing", ["`(1 ,@'(2 3) 4)", "`(,@'(5))", "`(1 ,@'() 4)", "(var a '(1 2)) `(5 ,@a)"]]);
         
-        compiles.push(["importing", ["(import \"internal\") (id 5)", "(import \"import-test\") (id 5)"]]);
+        compiles.push(["importing", ["(import \"import-test\") (id 5)"]]);
         
         var runCompiles = function () {
             if (compiles.length > 0) {

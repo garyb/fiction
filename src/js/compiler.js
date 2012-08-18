@@ -325,19 +325,7 @@ define(["util", "syntax", "javascript"], function (util, syntax, js) {
         return false;
     }
     
-    function getImportNames(values) {
-        var names = [];
-        for (var i = 0, l = values.length; i < l; i++) {
-            var value = values[i];
-            if (value.type !== "literal" || (typeof value.value !== "string")) {
-                error("import: non-string import", value);
-            }
-            names[i] = values[i].value;
-        }
-        return names;
-    }
-    
-    function compileScript(forms, handleImport, k, env) {
+    function compileScript(forms, env) {
         env = env || {};
         var prefix = "";
         if (anyUsesSymbolQuote(forms)) {
@@ -347,55 +335,11 @@ define(["util", "syntax", "javascript"], function (util, syntax, js) {
                 throw new Error("Don't know how to deal with the case where 'symbol' was already reserved in the environment");
             }
             prefix = "var symbol = (function () { var table = {}; return function (id) { return table.hasOwnProperty(id) ? table[id] : table[id] = { toString: function () { return id; } }; }; }());\n";
+            env = tmp.env;
         }
-        
-        if (handleImport) {
-            var result = [];
-            var forms1 = forms.slice();
-            var imports = [];
-            var imported = {};
-            var compileNext = function () {
-                var form;
-                while ((form = forms1.shift())) {
-                    if (checkForm(form, "import")) {
-                        syntax.checks["import"](form.value.slice(1), form);
-                        imports = imports.concat(getImportNames(form.value.slice(1)));
-                        importNext();
-                        return;
-                    }
-                    var tmp = compile(form, env);
-                    result.push(tmp.value);
-                    env = tmp.env;
-                }
-                k(prefix + result.join(";\n") + ";");
-            };
-            var spliceImport = function (name) {
-                return function (importedForms) {
-                    forms1 = importedForms.concat(forms1);
-                    imported[name] = true;
-                    importNext();
-                };
-            };
-            var importNext = function () {
-                if (imports.length > 0) {
-                    var name = imports.shift();
-                    if (imported.hasOwnProperty(name)) {
-                        importNext();
-                    } else {
-                        handleImport(name, spliceImport(name));
-                    }
-                } else {
-                    compileNext();
-                }
-            };
-            compileNext();
-        } else {
-            k(prefix + compileAll(forms, env).value);
-        }
+        return prefix + compileAll(forms, env).value;
     }
     
-    return {
-        compile: compileScript
-    };
+    return { compile: compileScript };
     
 });
