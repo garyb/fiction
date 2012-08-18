@@ -77,30 +77,21 @@ define(["util", "syntax", "javascript"], function (util, syntax, js) {
         return get(env, form.value, form);
     }
     
-    function compileVar(args, env, form) {
-        if (args[0].type !== "symbol") {
-            error("var: invalid identifier '" + args[1] + "'", form);
-        }
+    function compileVar(args, env) {
         var tmp = put(env, args[0].value);
         var id = tmp.id;
         tmp = compile(args[1], tmp.env);
         return { value: "var " + id + " = " + tmp.value, env: tmp.env };
     }
     
-    function compileFunc(args, env, form) {
+    function compileFunc(args, env) {
         var result = null, tmp = null;
-        if (args.length !== 2) {
-            error("fn: bad syntax", form);
-        }
         var body = args.slice(1);
         if (args[0].type === "list") {
             var argNames = [];
             var argsList = args[0].value;
             var argsEnv = env;
             for (var i = 0, l = argsList.length; i < l; i++) {
-                if (argsList[i].type !== "symbol") {
-                    error("fn: invalid argument definition", argsList[i]);
-                }
                 tmp = put(argsEnv, argsList[i].value);
                 argNames[i] = tmp.id;
                 argsEnv = tmp.env;
@@ -114,8 +105,6 @@ define(["util", "syntax", "javascript"], function (util, syntax, js) {
             var assn = "var " + restId + " = Array.prototype.slice.call(arguments);";
             tmp = compileAll(insertReturn(body), restEnv);
             result = "(function () {\n\t" + assn + "\n\t" + tmp.value.replace(/\n/g, "\n\t") + "\n})";
-        } else {
-            error("fn: invalid arguments definition", args[0]);
         }
         return { value: result, env: env };
     }
@@ -135,19 +124,13 @@ define(["util", "syntax", "javascript"], function (util, syntax, js) {
         return result;
     }
     
-    function compileAssign(args, env, form) {
-        if (args[0].type !== "symbol") {
-            error("set!: invalid identifier '" + args[1] + "'", form);
-        }
+    function compileAssign(args, env) {
         var assignee = compileSymbol(args[0], env);
         var tmp = compile(args[1], env);
         return { value: assignee + " = " + tmp.value, env: tmp.env };
     }  
     
-    function compileIf(args, env, form) {
-        if (args.length !== 3) {
-            error("if: bad syntax", form);
-        }
+    function compileIf(args, env) {
         var tmp = compile(args[0], env);
         var test = tmp.value;
         tmp = compile(args[1], tmp.env);
@@ -157,10 +140,7 @@ define(["util", "syntax", "javascript"], function (util, syntax, js) {
         return { value: test + " ? " + then + " : " + elss, env: tmp.env };
     }
     
-    function compileQuote(args, env, form) {
-        if (args.length !== 1) {
-            error("quote: bad syntax", form);
-        }
+    function compileQuote(args, env) {
         var result = compileQuoteValue(args[0]);
         return { value: result, env: env };
     }
@@ -181,10 +161,7 @@ define(["util", "syntax", "javascript"], function (util, syntax, js) {
         return result;
     }
     
-    function compileQuasiQuote(args, env, form) {
-        if (args.length !== 1) {
-            error("quasiquote: bad syntax", form);
-        }
+    function compileQuasiQuote(args, env) {
         return compileQuasiQuotedValue(args[0], env);
     }
     
@@ -195,21 +172,13 @@ define(["util", "syntax", "javascript"], function (util, syntax, js) {
         } else if (arg.type === "symbol") {
             result = "symbol(\"" + arg.value + "\")";
         } else if (checkForm(arg, "unquote")) {
-            if (arg.value.length !== 2) {
-                error("unquote: bad syntax", arg);
-            }
             return compile(arg.value[1], env);
-        } else if (checkForm(arg, "unquote-splicing")) {
-            error("unquote-splicing: not in list", arg);
         } else {
             var outer = [];
             var items = [];
             for (var i = 0, l = arg.value.length; i < l; i++) {
                 var f = arg.value[i];
                 if (checkForm(f, "unquote-splicing")) {
-                    if (f.value.length !== 2) {
-                        error("unquote-splicing: bad syntax", f);
-                    }
                     var splice = compile(f.value[1], env);
                     if (splice.value !== "[]") {
                         if (items.length > 0) {
@@ -237,17 +206,8 @@ define(["util", "syntax", "javascript"], function (util, syntax, js) {
         return { value: result, env: env };
     }
     
-    function quasiQuoteScopeError(type) {
-        return function () {
-            error(type + ": not in quasiquote", arguments[2]);
-        };
-    }
-    
     function compileStatement(statement) {
-        return function (args, env, form) {
-            if (args.length > 1) {
-                error(statement + ": bad syntax", form);
-            }
+        return function (args, env) {
             var tmp = compile(args[0], env);
             return { value: statement + " " + tmp.value, env: env };
         };
@@ -269,8 +229,6 @@ define(["util", "syntax", "javascript"], function (util, syntax, js) {
         "if": compileIf,
         "quote": compileQuote,
         "quasiquote": compileQuasiQuote,
-        "unquote": quasiQuoteScopeError("unquote"),
-        "unquote-splicing": quasiQuoteScopeError("unquote-splicing"),
         "import": importError,
         "#return": compileStatement("return"),
         "list": compileArray
