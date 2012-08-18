@@ -49,6 +49,12 @@ define(["util", "syntax"], function (util, syntax) {
     //  Expand transforms
     // ------------------------------------------------------------------------
     
+    var symbols = {
+        "var": createForm("symbol", "var"),
+        "fn": createForm("symbol", "fn"),
+        "quasiquote": createForm("symbol", "quasiquote")
+    };
+    
     function expandImport(atoms, form, env, imp, impChain) {
         var result = [];
         for (var i = 0, l = atoms.length; i < l; i++) {
@@ -66,11 +72,36 @@ define(["util", "syntax"], function (util, syntax) {
     
     function expandVar(atoms, form, env, imp, impChain) {
         var tmp = put(env, atoms[0].value);
-        var sym0 = createForm("symbol", "var");
-        var sym1 = createForm("symbol", tmp.id);
+        var id = createForm("symbol", tmp.id);
         tmp = expand(atoms[1], tmp.env, imp, impChain);
-        var value = tmp.value;
-        return { value: createForm("list", [sym0, sym1].concat(value)), env: tmp.env };
+        var result = createForm("list", [symbols["var"], id].concat(tmp.value));
+        return { value: result, env: tmp.env };
+    }
+    
+    function expandFunc(atoms, form, env, imp, impChain) {
+        var result = null, tmp = null;
+        var args = atoms[0];
+        var body = atoms.slice(1);
+        if (args.type === "list") {
+            var argNames = [];
+            var argsList = args.value;
+            var argsEnv = env;
+            for (var i = 0, l = argsList.length; i < l; i++) {
+                tmp = put(argsEnv, argsList[i].value);
+                argNames[i] = createForm("symbol", tmp.id);
+                argsEnv = tmp.env;
+            }
+            tmp = expandAll(body, argsEnv, imp, impChain);
+            var newArgs = createForm("list", argNames);
+            result = createForm("list", [symbols.fn, newArgs].concat(tmp.value));
+        } else if (args.type === "symbol") {
+            tmp = put(env, args.value);
+            var restId = createForm("symbol", tmp.id);
+            var restEnv = tmp.env;
+            tmp = expandAll(body, restEnv, imp, impChain);
+            result = createForm("list", [symbols.fn, restId].concat(tmp.value));
+        }
+        return { value: result, env: env };
     }
     
     function expandQuote() {
@@ -78,7 +109,7 @@ define(["util", "syntax"], function (util, syntax) {
     }
     
     function expandQuasiQuote(atoms, form, env, imp, impChain) {
-        var sym = createForm("symbol", "quasiquote");
+        var sym = symbols.quasiquote;
         var tmp = expandQuasiQuoteValue(atoms[0], env, imp, impChain);
         return { value: createForm("list", [sym].concat(tmp.value)), env: env };
     }
@@ -162,6 +193,7 @@ define(["util", "syntax"], function (util, syntax) {
     var expanders = {
         "import": expandImport,
         "var": expandVar,
+        "fn": expandFunc,
         "quote": expandQuote,
         "quasiquote": expandQuasiQuote
         //"define-syntax": expandDefineSyntax

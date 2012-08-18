@@ -63,6 +63,8 @@ require(["playground", "reader", "expander", "util"], function (playground, read
         
         things.push(["variable numbering", ["(var a 0) a", "(var a 100) (var a 200) a"]]);
         
+        things.push(["variable & argument numbering", ["(var a 100) (var a 200) (fn (a) a) a (fn a a) a"]]);
+        
         things.push(["special form redefinition", ["(var set! (fn (x) `(bad-idea ,x))) (set! 100)"]]);
         
         var runThings = function () {
