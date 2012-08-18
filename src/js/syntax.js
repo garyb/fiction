@@ -33,6 +33,28 @@ define(["util"], function (util) {
 
     /**
      * Checks whether `atoms` are valid values for an application of the
+     * primitive `import`. The valid form for `import` is `(import name ...)` 
+     * where `name ...` is a list of non-empty string literals. The full version
+     * of the form being checked is provided as `expr` for use in error 
+     * messages.
+     */
+    function checkImport(atoms, expr) {
+        if (atoms.length === 0) {
+            error("import: bad syntax - empty expression", expr);
+        }
+        for (var i = 0, l = atoms.length; i < l; i++) {
+            var name = atoms[i];
+            if (name.type !== "literal" || (typeof name.value !== "string")) {
+                error("import: invalid import name, should be a string", name);
+            }
+            if (name.value.length === 0) {
+                error("import: invalid import name, empty string", name);
+            }
+        }
+    }
+    
+    /**
+     * Checks whether `atoms` are valid values for an application of the
      * primitive `var`. The valid form for `var` is `(var id value)` where `id`
      * is any symbol not starting with `.`, and `value` is any valid
      * expression. The full version of the form being checked is provided as
@@ -247,6 +269,7 @@ define(["util"], function (util) {
 
     return {
         checks: {
+            "import": checkImport,
             "var": checkVar,
             "fn": checkFunction,
             "set!": checkAssign,

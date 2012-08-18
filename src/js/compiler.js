@@ -358,6 +358,7 @@ define(["util", "syntax", "javascript"], function (util, syntax, js) {
                 var form;
                 while ((form = forms1.shift())) {
                     if (checkForm(form, "import")) {
+                        syntax.checks["import"](form.value.slice(1), form);
                         imports = imports.concat(getImportNames(form.value.slice(1)));
                         importNext();
                         return;
