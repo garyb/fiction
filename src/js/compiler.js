@@ -218,10 +218,6 @@ define(["util", "syntax", "javascript"], function (util, syntax, js) {
         return { value: "[" + tmp.value.join(", ") + "]", env: env };
     }    
     
-    function importError() {
-        error("import: not valid here", arguments[2]);
-    }
-    
     var specialForms = {
         "var": compileVar,
         "fn": compileFunc,
@@ -229,7 +225,6 @@ define(["util", "syntax", "javascript"], function (util, syntax, js) {
         "if": compileIf,
         "quote": compileQuote,
         "quasiquote": compileQuasiQuote,
-        "import": importError,
         "#return": compileStatement("return"),
         "list": compileArray
     };
