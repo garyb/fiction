@@ -61,6 +61,10 @@ require(["playground", "reader", "expander", "util"], function (playground, read
         things.push(["chain imports", ["(import \"chain-import-test\")"]]);
         things.push(["recursive imports", ["(import \"recursive-import-test\")", "(import \"recursive-import-test-a\")"]]);
         
+        things.push(["variable numbering", ["(var a 0) a", "(var a 100) (var a 200) a"]]);
+        
+        things.push(["special form redefinition", ["(var set! (fn (x) `(bad-idea ,x))) (set! 100)"]]);
+        
         var runThings = function () {
             if (things.length > 0) {
                 var params = things.shift();

@@ -7,15 +7,6 @@ define(["util", "syntax"], function (util, syntax) {
     var checkForm = util.checkForm;
     var createForm = util.createForm;
     
-    // TODO: expander needs to perform identifier remapping instead of waiting 
-    // until the compile stage - this is necessary to maintain macro hygiene 
-    // when free identifiers are used in macro templates, as free identifiers 
-    // need to refer to the identifier in the macro's scope:
-    // e.g. if macro `m1` is rewritten to `a`:
-    // (var a 50)
-    // (m1); = 50
-    // (let ((a 1000)) (m1)) ; still = 50
-    
     function error(msg, form) {
         // TODO: add line/char details to forms for better errors
         throw new Error(msg + " @ " + util.printRawForm(form));
@@ -25,11 +16,17 @@ define(["util", "syntax"], function (util, syntax) {
     //  Identifier environment
     // ------------------------------------------------------------------------
     
+    var natives = util.makeMap([
+        "import", 
+        "var", "fn", "set!", "if", 
+        "quote", "quasiquote", "unquote", "unquote-splicing"
+    ]);
+    
     function put(env, id) {
         var newId = id;
-        if (env.hasOwnProperty(newId)) {
+        if (env.hasOwnProperty(newId) || natives.hasOwnProperty(newId)) {
             var n = 1;
-            while (env.hasOwnProperty(newId + n)) {
+            while (env.hasOwnProperty(newId + n) || natives.hasOwnProperty(newId + n)) {
                 n++;
             }
             newId += n.toString();
@@ -65,6 +62,15 @@ define(["util", "syntax"], function (util, syntax) {
             }
         }
         return { value: result, env: env };
+    }
+    
+    function expandVar(atoms, form, env, imp, impChain) {
+        var tmp = put(env, atoms[0].value);
+        var sym0 = createForm("symbol", "var");
+        var sym1 = createForm("symbol", tmp.id);
+        tmp = expand(atoms[1], tmp.env, imp, impChain);
+        var value = tmp.value;
+        return { value: createForm("list", [sym0, sym1].concat(value)), env: tmp.env };
     }
     
     function expandQuote() {
@@ -155,6 +161,7 @@ define(["util", "syntax"], function (util, syntax) {
     
     var expanders = {
         "import": expandImport,
+        "var": expandVar,
         "quote": expandQuote,
         "quasiquote": expandQuasiQuote
         //"define-syntax": expandDefineSyntax
@@ -178,6 +185,8 @@ define(["util", "syntax"], function (util, syntax) {
             var tmp = expandAll(form.value, env, imp, impChain);
             result = createForm("list", tmp.value);
             env = tmp.env;
+        } else if (form.type === "symbol" && env.hasOwnProperty(form.value)) {
+            result = createForm("symbol", get(env, form.value));
         }
         return { value: result, env: env };
     }
