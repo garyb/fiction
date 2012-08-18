@@ -272,15 +272,12 @@ define(["util"], function (util) {
                 }
             }
         }
-        var rules = atoms[1];
-        if (rules.type !== "list") {
-            error("syntax-rules: rules should be a list", rules);
-        }
-        if (rules.value.length === 0) {
+        var rules = atoms.slice(1);
+        if (rules.length === 0) {
             error("syntax-rules: empty rules list", rules);
         }
-        for (var j = 0, m = rules.value.length; j < m; j++) {
-            var rule = rules.value[j];
+        for (var j = 0, m = rules.length; j < m; j++) {
+            var rule = rules[j];
             if (rule.type !== "list") {
                 error("syntax-rules: invalid rule", rule);
             }
@@ -294,10 +291,10 @@ define(["util"], function (util) {
                 error("syntax-rules: rule has too many arguments", rule);
             }
             if (rule.value[0].type !== "list") {
-                error("syntax-rules: pattern should be a list expression", rule);
+                error("syntax-rules: pattern should be a list expression", rule.value[0]);
             }
             if (rule.value[0].value[0].type !== "symbol") {
-                error("syntax-rules: pattern should start with an identifier", rule);
+                error("syntax-rules: pattern should start with an identifier", rule.value[0]);
             }
         }
     }
