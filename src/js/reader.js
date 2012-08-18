@@ -107,17 +107,14 @@ define(["util"], function (util) {
     }
 
     function readComment(state) {
-        var text = "";
         state.i++;
         while (state.i < state.l) {
             var chr = state.input.charAt(state.i++);
             if (chr === "\n") {
                 break;
-            } else if (chr !== "\r") {
-                text += chr;
             }
         }
-        return createForm("list", [createForm("symbol", "comment"), text]);
+        return skip;
     }
 
     function readQuote(type) {
@@ -216,7 +213,10 @@ define(["util"], function (util) {
                 state.i++;
                 continue;
             } else if (reader) {
-                return reader(state);
+                var value = reader(state);
+                if (value !== skip) {
+                    return value;
+                }
             } else {
                 return readSymbol(state);
             }
