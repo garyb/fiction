@@ -211,12 +211,7 @@ define(["util", "syntax", "javascript"], function (util, syntax, js) {
             var tmp = compile(args[0], env);
             return { value: statement + " " + tmp.value, env: env };
         };
-    }
-    
-    function compileArray(args, env) {
-        var tmp = compileAll(args, env);
-        return { value: "[" + tmp.value.join(", ") + "]", env: env };
-    }    
+    }   
     
     var specialForms = {
         "var": compileVar,
@@ -225,8 +220,7 @@ define(["util", "syntax", "javascript"], function (util, syntax, js) {
         "if": compileIf,
         "quote": compileQuote,
         "quasiquote": compileQuasiQuote,
-        "#return": compileStatement("return"),
-        "list": compileArray
+        "#return": compileStatement("return")
     };
     
     function compileApply(fnf, args, env) {
