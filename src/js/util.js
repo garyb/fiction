@@ -15,17 +15,17 @@ define(function () {
     
     function createForm(type, value, extras) {
         if (type !== "literal" && type !== "symbol" && type !== "list") {
-            throw new Error("Form must be a literal, symbol, or list");
+            throw new Error("Form must be a literal, symbol, or list, found: " + type);
         }
         if (value === null || value === undefined) {
             throw new Error("Form value cannot be null or undefined");
         }
         if (type === "list" && !Array.isArray(value)) {
-            throw new Error("List should have an array value");
+            throw new Error("List should have an array value, found: " + value);
         }
         if (type === "symbol") {
             if (typeof value !== "string") {
-                throw new Error("Symbol should have a string value");
+                throw new Error("Symbol should have a string value, found: " + value);
             }
             if (value.length === 0) {
                 throw new Error("Symbol value is empty");
@@ -35,7 +35,7 @@ define(function () {
             if ((typeof value !== "string") && 
                 (typeof value !== "number") && 
                 (typeof value !== "boolean")) {
-                throw new Error("Literal value should be string, number, or boolean");
+                throw new Error("Literal value should be string, number, or boolean, found: " + value);
             }
         }
         var form = { type: type, value: value };
