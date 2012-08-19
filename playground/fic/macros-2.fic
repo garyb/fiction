@@ -1,0 +1,6 @@
+(import "macros-1")
+
+(define-syntax do
+  (syntax-rules ()
+    [(_ e) e]
+    [(_ e es ...) (do! e es ...)]))
