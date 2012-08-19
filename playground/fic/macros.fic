@@ -1,0 +1,3 @@
+(define-syntax do!
+  (syntax-rules ()
+    [(_ e ...) ((fn () e ...))]))

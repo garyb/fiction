@@ -51,6 +51,14 @@ require(["playground", "reader", "expander", "evaluator", "util"], function (pla
         things.push(["quasiquote & unquote", ["(var a 10) `(1 ,a)", "(var a 10) `(1 '(2 ,a))", "(var a 10) (var b '(2 ,a)) `(1 ,b)", "`(1 ,'(2 3) 4)"]]);
         things.push(["unquote-splicing", ["`(1 ,@'(2 3) 4)", "`(,@'(5))", "`(1 ,@'() 4)", "(var a '(1 2)) `(5 ,@a)"]]);
         
+        things.push(["macros", ["(import \"macros-1\") (do! 1) (do! 1 2 3)",
+                                "(import \"macros-2\") (do 1) (do 1 2 3)",
+                                "(import \"macros-3\") (let1 ((a 1)) `(,a))",
+                                "(import \"macros-4\") (let ((a 1) (b 2) (c 3)) `(,a ,b ,c))",
+                                "(import \"macros-5\") (mc (1 2 3) (a b c))",
+                                "(import \"macros-6\") (<++ 1 2 3 4)",
+                                "(import \"macros-6\") (++> 1 2 3 4)"]]);
+        
         var runThings = function () {
             if (things.length > 0) {
                 var params = things.shift();

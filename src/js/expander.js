@@ -156,6 +156,7 @@ define(["util", "syntax"], function (util, syntax) {
             if (result === null) {
                 error(syntaxId + ": bad syntax");
             }
+            console.log(util.printPretty(result));
             return expand(result, env, imp, impChain);
         };
         return { value: [], env: env };
@@ -217,10 +218,10 @@ define(["util", "syntax"], function (util, syntax) {
             };
         };
         
-        var bindList = function (id) {
+        var bindList = function (id, limit) {
             return function (state) {
                 var forms = [];
-                while (state.i < state.input.length) {
+                while (state.i < (state.input.length - limit)) {
                     var form = state.input[state.i++];
                     forms.push(form);
                 }
@@ -244,12 +245,12 @@ define(["util", "syntax"], function (util, syntax) {
             };
         };     
         
-        var readListList = function (seq, outIds) {
+        var readListList = function (seq, limit, outIds) {
             var readInnerList = readList(seq);
             return function (state) {
                 var forms = [];
                 var outputs = [];
-                while (state.i < state.input.length) {
+                while (state.i < (state.input.length - limit)) {
                     var form = state.input[state.i++];
                     if (form.type !== "list") {
                         break;
@@ -408,13 +409,13 @@ define(["util", "syntax"], function (util, syntax) {
                         }
                     }
                     ids = util.copyProps(tmp.ids, ids);
-                    seq.push(patternReader.readListList(tmp.seq, tmp.ids));
+                    seq.push(patternReader.readListList(tmp.seq, ellipsisLimit, tmp.ids));
                     
                 } else {
                 
                     tmp = parsePatternList(atom.value, reserved, ids);
                     ids = util.copyProps(tmp.ids, ids);
-                    seq.push(patternReader.readList(tmp.seq));
+                    seq.push(patternReader.readList(tmp.seq, ellipsisLimit));
                     
                 }
             } 

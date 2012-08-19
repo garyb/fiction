@@ -1,0 +1,19 @@
+
+(define-syntax def-op-left
+  (syntax-rules ()
+    ((_ op base) 
+     (define-syntax op
+       (syntax-rules ()
+         ((op x y) `(base ,x ,y))
+         ((op xs (... ...) y) (op (op xs (... ...)) y)))))))
+
+(define-syntax def-op-right
+  (syntax-rules ()
+    ((_ op base) 
+     (define-syntax op
+       (syntax-rules ()
+         ((op x y) `(base ,x ,y))
+         ((op x ys (... ...)) (op x (op ys (... ...)))))))))
+
+(def-op-left <++ +)
+(def-op-right ++> +)
