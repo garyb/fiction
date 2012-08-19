@@ -240,8 +240,11 @@ define(["util"], function (util) {
         if (atoms.length > 2) {
             error("define-syntax: too many arguments", expr);
         }
+        if (atoms[0].type !== "symbol") {
+            error("define-syntax: macro identifier must be a symbol", atoms[0]);
+        }
         if (!util.checkForm(atoms[1], "syntax-rules")) {
-            error("define-syntax: transformer should be a `syntax-rules` form");
+            error("define-syntax: transformer should be a `syntax-rules` form", atoms[1]);
         }
     }
     
@@ -259,9 +262,6 @@ define(["util"], function (util) {
         }
         if (atoms.length === 1) {
             error("syntax-rules: missing pattern and template definitions", expr);
-        }
-        if (atoms.length > 2) {
-            error("syntax-rules: too many arguments", expr);
         }
         var symbols = atoms[0];
         if (symbols.type !== "list") {
