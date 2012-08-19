@@ -168,8 +168,6 @@ define(["util", "syntax"], function (util, syntax) {
     function parseSyntaxRules(syntaxId, atoms, form, env) {
         syntax.checks["syntax-rules"](atoms, form);
         
-        // TODO: require that free identifiers in templates have already been declared to ensure predictable expansion
-        
         var reserved = atoms[0].value.map(function (x) { return x.value; });
         var rules = atoms.slice(1);
         var result = [];
@@ -214,7 +212,7 @@ define(["util", "syntax"], function (util, syntax) {
         var bind = function (id) {
             return function (state) {
                 var form = state.input[state.i++];
-                state.bind(id, form);
+                state.output[id] = form;
                 return true;
             };
         };
@@ -226,32 +224,84 @@ define(["util", "syntax"], function (util, syntax) {
                     var form = state.input[state.i++];
                     forms.push(form);
                 }
-                state.bind(id, forms);
+                state.output[id] = forms;
                 return true;
+            };
+        };
+        
+        var readList = function (seq) {
+            return function (state) {
+                var form = state.input[state.i++];
+                if (form.type !== "list") {
+                    return false;
+                }
+                var state1 = makeState(form.value);
+                if (run(seq, state1)) {
+                    state.output = util.copyProps(state1.output, state.output);
+                    return true;
+                }
+                return false;
+            };
+        };     
+        
+        var readListList = function (seq, outIds) {
+            var readInnerList = readList(seq);
+            return function (state) {
+                var forms = [];
+                var outputs = [];
+                while (state.i < state.input.length) {
+                    var form = state.input[state.i++];
+                    if (form.type !== "list") {
+                        break;
+                    }
+                    var state1 = makeState(form.value);
+                    if (run(seq, state1)) {
+                        outputs.push(state1.output);
+                    } else {
+                        break;
+                    }
+                }
+                var combinedOutput = {};
+                for (var k in outIds) {
+                    if (outIds.hasOwnProperty(k)) {
+                        combinedOutput[k] = [];
+                    }
+                }
+                for (var i = 0, l = outputs.length; i < l; i++) {
+                    for (k in outIds) {
+                        if (outIds.hasOwnProperty(k)) {
+                            combinedOutput[k].push(outputs[i][k]);
+                        }
+                    }
+                }
+                state.output = util.copyProps(combinedOutput, state.output);
+                return true;
+            };
+        };
+        
+        var run = function (seq, state) {
+            var i = 0, l = seq.length;
+            while (state.i < state.length && i < l) {
+                if (!seq[i++](state)) {
+                    return;
+                }
+            }
+            return state.i === state.length;
+        };
+        
+        var makeState = function (atoms) {
+            return {
+                input: atoms,
+                i: 0,
+                length: atoms.length,
+                output: {}
             };
         };
         
         var create = function (seq) {
             return function (atoms) {
-                var state = {
-                    input: atoms,
-                    i: 0,
-                    length: atoms.length,
-                    output: {},
-                    bind: function (id, value) {
-                        state.output[id] = value;
-                    }
-                };
-                var i = 0, l = seq.length;
-                while (state.i < state.length && i < l) {
-                    if (!seq[i++](state)) {
-                        break;
-                    }
-                }
-                if (state.i !== state.length) {
-                    return null;
-                }
-                return state.output;
+                var state = makeState(atoms);
+                return run(seq, state) ? state.output : null;
             };
         };
         
@@ -260,6 +310,8 @@ define(["util", "syntax"], function (util, syntax) {
             matchList: matchList,
             bind: bind,
             bindList: bindList,
+            readList: readList,
+            readListList: readListList,
             create: create
         };
     
@@ -276,6 +328,18 @@ define(["util", "syntax"], function (util, syntax) {
         }
         
         var atoms = isTopLevel ? pat.slice(1) : pat;
+        var tmp = parsePatternList(atoms, reserved, {});
+        var ids = tmp.ids;
+        var seq = tmp.seq;
+        
+        return {
+            temp: atoms.map(util.printPretty).join(" "),
+            ids: ids,
+            run: patternReader.create(seq)
+        };
+    }
+    
+    function parsePatternList(atoms, reserved, outerIds) {
         var seq = [];
         var doneEllipsis = false;
         
@@ -311,6 +375,9 @@ define(["util", "syntax"], function (util, syntax) {
                         seq.push(patternReader.match(atom));
                     }
                 } else {
+                    if (ids.hasOwnProperty(atom.value) || outerIds.hasOwnProperty(atom.value)) {
+                        error("syntax-rules: variable appears twice in pattern", atom);
+                    }
                     if (hasEllipsis) {
                         ids[atom.value] = 1;
                         seq.push(patternReader.bindList(atom.value, ellipsisLimit));
@@ -329,7 +396,27 @@ define(["util", "syntax"], function (util, syntax) {
                 }
                 
             } else if (atom.type === "list") {
-                throw new Error("can't do sub-patterns yet");
+            
+                var tmp;
+            
+                if (hasEllipsis) {
+                
+                    tmp = parsePatternList(atom.value, reserved, ids);
+                    for (var k in tmp.ids) {
+                        if (tmp.ids.hasOwnProperty(k)) {
+                            tmp.ids[k]++;
+                        }
+                    }
+                    ids = util.copyProps(tmp.ids, ids);
+                    seq.push(patternReader.readListList(tmp.seq, tmp.ids));
+                    
+                } else {
+                
+                    tmp = parsePatternList(atom.value, reserved, ids);
+                    ids = util.copyProps(tmp.ids, ids);
+                    seq.push(patternReader.readList(tmp.seq));
+                    
+                }
             } 
             
             if (hasEllipsis) {
@@ -338,11 +425,7 @@ define(["util", "syntax"], function (util, syntax) {
             }
         }
         
-        return {
-            temp: atoms.map(util.printPretty).join(" "),
-            ids: ids,
-            run: patternReader.create(seq)
-        };
+        return { seq: seq, ids: ids };
     }
     
     function parseTemplate(template, patIds, env, reserved) {

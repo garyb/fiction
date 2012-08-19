@@ -44,6 +44,7 @@ define(function () {
     window.onerror = function (e) {
         trace("status", "There was an error:", e);
         errored = true;
+        scrollTo(0, window.innerHeight);
     };
     
     return {

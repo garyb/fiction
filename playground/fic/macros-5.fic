@@ -1,0 +1,3 @@
+(define-syntax mc
+  (syntax-rules ()
+    [(_ (x ...) ...) `(x ... ...)]))

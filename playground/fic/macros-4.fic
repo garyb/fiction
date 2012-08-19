@@ -1,0 +1,3 @@
+(define-syntax let
+  (syntax-rules ()
+    [(_ ((id val) ...) body ...) ((fn (id ...) body ...) val ...)]))
