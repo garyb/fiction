@@ -117,13 +117,22 @@ define(function () {
         return result;
     }
     
+    function flatten(list) {
+        var result = [];
+        for (var i = 0, l = list.length; i < l; i++) {
+            result = result.concat(list[i]);
+        }
+        return result;
+    }
+    
     return {
         copyProps: copyProps,
         printRawForm: printRawForm,
         printPretty: printPretty,
         createForm: createForm,
         checkForm: checkForm,
-        makeMap: makeMap
+        makeMap: makeMap,
+        flatten: flatten
     };
     
 });

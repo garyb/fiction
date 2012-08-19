@@ -474,26 +474,20 @@ define(["util", "syntax"], function (util, syntax) {
 
                 for (var i = 0, l = atoms.length; i < l; i++) {
                     var atom = atoms[i];
+                    var tv = template.value[i];
                     
-                    var hasEllipsis = i < atoms.length - 1 && 
+                    var value = [apply(tv, tenv)];
+                    
+                    while (i < atoms.length - 1 && 
                               atoms[i + 1].type === "symbol" && 
-                              atoms[i + 1].value === "...";
-                              
-                    var value = apply(template.value[i], tenv);
-                    
-                    if (hasEllipsis) {
-                        values = values.concat(value);
-                    } else {
-                        if (Array.isArray(value)) {
-                            error("something went wrong, non ... pattern returned array", atom);
-                        }   
-                        values.push(value);
-                    }
-                    
-                    if (hasEllipsis) {
+                              atoms[i + 1].value === "...") {
+                        value = util.flatten(value);
                         i++;
                     }
+                    
+                    values = values.concat(value);
                 }
+                
                 return createForm("list", values);
             }
         };
@@ -507,7 +501,6 @@ define(["util", "syntax"], function (util, syntax) {
                 return result;
             }
         };
-        
     }
     
     // ------------------------------------------------------------------------

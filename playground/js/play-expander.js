@@ -71,7 +71,8 @@ require(["playground", "reader", "expander", "util"], function (playground, read
                                 "(import \"macros-2\") (do 1) (do 1 2 3)",
                                 "(import \"macros-3\") (let1 ((a 1)) `(,a))",
                                 "(import \"macros-4\") (let ((a 1) (b 2) (c 3)) `(,a ,b ,c))",
-                                "(import \"macros-5\") (mc (1 2 3) (a b c))"]]);
+                                "(import \"macros-5\") (mc (1 2 3) (a b c))"
+                                ]]);
         
         var runThings = function () {
             if (things.length > 0) {
