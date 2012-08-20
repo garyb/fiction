@@ -1,4 +1,4 @@
-/*jshint devel: true, bitwise: true, camelcase: true, curly: true, eqeqeq: true, forin: true, immed: true, indent: 4, latedef: true, newcap: true, noarg: true, noempty: true, nonew: true, regexp: true, undef: true, strict: true*/
+/*jshint bitwise: true, camelcase: true, curly: true, eqeqeq: true, forin: true, immed: true, indent: 4, latedef: true, newcap: true, noarg: true, noempty: true, nonew: true, regexp: true, undef: true, strict: true*/
 /*global define*/
 define(["util", "syntax"], function (util, syntax) {
 
@@ -135,7 +135,7 @@ define(["util", "syntax"], function (util, syntax) {
         return { value: [form], env: env };
     }
     
-    function expandDefineSyntax(atoms, form, env, imp, impChain) {
+    function expandDefineSyntax(atoms, form, env) {
         var syntaxId = atoms[0].value;
         var transformer = atoms[1];
         
@@ -147,16 +147,15 @@ define(["util", "syntax"], function (util, syntax) {
             var result = null;
             for (var i = 0, l = rules.length; i < l; i++) {
                 var rule = rules[i];
-                var values = rules[i].pattern.run(atoms);
+                var values = rule.pattern.run(atoms);
                 if (values) {
-                    result = rules[i].template.populate(values);
+                    result = rule.template.populate(values);
                     break;
                 }
             }
             if (result === null) {
-                error(syntaxId + ": bad syntax");
+                error(syntaxId + ": bad syntax", form);
             }
-            console.log(util.printPretty(result));
             return expand(result, env, imp, impChain);
         };
         return { value: [], env: env };
@@ -246,9 +245,7 @@ define(["util", "syntax"], function (util, syntax) {
         };     
         
         var readListList = function (seq, limit, outIds) {
-            var readInnerList = readList(seq);
             return function (state) {
-                var forms = [];
                 var outputs = [];
                 while (state.i < (state.input.length - limit)) {
                     var form = state.input[state.i++];
@@ -431,13 +428,10 @@ define(["util", "syntax"], function (util, syntax) {
     
     function parseTemplate(template, patIds, env, reserved) {
         // TODO: warn/info about using reserved ids in template
-        // TODO: warn about using free ids in template that are not yet declared
-        // TODO: both of the above need to be quote-aware, as a quoted free id 
-        //       is just a symbol. this might not actually be possible - if 
-        //       another macro is used in the template, unless it can be
-        //       expanded at template-define-time, there is no way of knowing 
-        //       whether a symbol is being used as an identifier or just in a 
-        //       quote.
+        
+        // TODO: templates need to be quote-aware, so symbols are not rewritten
+        //       using env mapping if they are quoted. basically 'a should 
+        //       always be 'a and not become 'a25 or whatever.
         
         var apply = function (template, tenv) {
             if (template.type === "literal") {
@@ -449,6 +443,12 @@ define(["util", "syntax"], function (util, syntax) {
                     return tenv[template.value];
                 } else if (env.hasOwnProperty(template.value)) {
                     var ev = get(env, template.value);
+                    // TODO: not sure about this - if env has the id as a 
+                    //       function, it's because it's bound to a macro in
+                    //       the current scope. just making a reference to that
+                    //       id isn't right, it should be bound to the macro 
+                    //       that currently has that id instead. this is also
+                    //       quote-sensitive.
                     if (typeof ev === "function") {
                         return createForm("symbol", template.value);
                     } else {
@@ -475,9 +475,7 @@ define(["util", "syntax"], function (util, syntax) {
 
                 for (var i = 0, l = atoms.length; i < l; i++) {
                     var atom = atoms[i];
-                    var tv = template.value[i];
-                    
-                    var value = [apply(tv, tenv)];
+                    var value = [apply(atom, tenv)];
                     
                     while (i < atoms.length - 1 && 
                               atoms[i + 1].type === "symbol" && 
