@@ -16,18 +16,22 @@ define(["util", "syntax"], function (util, syntax) {
     //  Identifier environment
     // ------------------------------------------------------------------------
     
-    function put(env, id) {
+    function put(env, id, fn) {
         var newId = id;
-        if (env.hasOwnProperty(newId)) {
-            var n = 1;
-            while (env.hasOwnProperty(newId + n)) {
-                n++;
-            }
-            newId += n.toString();
-        }
         var result = util.copyProps(env, {});
-        result[id] = newId;
-        result[newId] = newId;
+        if (fn) {
+            result[id] = fn;
+        } else {
+            if (env.hasOwnProperty(newId)) {
+                var n = 1;
+                while (env.hasOwnProperty(newId + n)) {
+                    n++;
+                }
+                newId += n.toString();
+            }
+            result[id] = newId;
+            result[newId] = newId;
+        }
         return { id: newId, env: result };
     }
     
@@ -174,9 +178,7 @@ define(["util", "syntax"], function (util, syntax) {
         
         var rules = parseSyntaxRules(syntaxId, transformer.value.slice(1), transformer, env);
         
-        // TODO: this env modification should be possible via put
-        env = util.copyProps(env, {});
-        env[syntaxId] = function (atoms, form, env, imp, impChain) {
+        put(env, syntaxId, function (atoms, form, env, imp, impChain) {
             var result = null;
             for (var i = 0, l = rules.length; i < l; i++) {
                 var rule = rules[i];
@@ -190,7 +192,7 @@ define(["util", "syntax"], function (util, syntax) {
                 error(syntaxId + ": bad syntax", form);
             }
             return expand(result, env, imp, impChain);
-        };
+        });
         return { value: [], env: env };
     }
     
