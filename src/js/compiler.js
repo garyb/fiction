@@ -144,8 +144,16 @@ define(["util", "javascript"], function (util, js) {
         return result;
     }
     
-    function compileAssign(args, env) {
-        var assignee = compileSymbol(args[0], env);
+    function compileAssign(args, env, form) {
+        
+        var assignee;
+        if (args[0].type === "list") {
+            var obj = compile(args[0].value[1], env);
+            assignee = "(" + obj.value + ")" + args[0].value[0].value;
+        } else {
+            assignee = compileSymbol(args[0], env);;
+        }
+        
         var tmp = compile(args[1], env);
         return { value: assignee + " = " + tmp.value, env: tmp.env };
     }  

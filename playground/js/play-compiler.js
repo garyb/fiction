@@ -24,7 +24,7 @@ require(["playground", "reader", "expander", "compiler"], function (playground, 
         run(name, input, function (x, k) {
             expander.expand(reader.read(x), handleImport, function (result) {
                 /*jshint evil: true*/
-                var js = compiler.compile(result).replace(/\n/g, "\n    ");
+                var js = compiler.compile(result, { window: "window" }).replace(/\n/g, "\n    ");
                 trace("output", x, "=", "\n    " + js + "\n" + prettyPrint(eval(js)) + "\n");
                 k();
             });
@@ -75,12 +75,15 @@ require(["playground", "reader", "expander", "compiler"], function (playground, 
         
         compiles.push(["importing", ["(import \"import-test\") (id 5)"]]);
         
+        compiles.push([".access", ["((.sin Math) 26)", "(set! (.foo window) 100) (.foo window)"]]);
+        
         var runCompiles = function () {
             if (compiles.length > 0) {
                 var params = compiles.shift();
                 compile.apply(null, params.concat([runCompiles]));
             } else {
                 trace("status", "It's all good.", new Date().getTime() - t, "ms.");
+                scrollTo(0, document.body.scrollHeight);
             }
         };
         
