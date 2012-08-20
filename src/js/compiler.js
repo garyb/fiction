@@ -1,4 +1,4 @@
-/*jshint bitwise: true, camelcase: true, curly: true, eqeqeq: true, forin: true, immed: true, indent: 4, latedef: true, newcap: true, noarg: true, noempty: true, nonew: true, regexp: true, undef: true, unused: true, strict: true*/
+/*jshint bitwise: true, camelcase: true, curly: true, eqeqeq: true, forin: true, immed: true, indent: 4, latedef: true, newcap: true, noarg: true, noempty: true, nonew: true, regexp: true, undef: true, strict: true*/
 /*global define*/
 define(["util", "javascript"], function (util, js) {
 
@@ -133,7 +133,7 @@ define(["util", "javascript"], function (util, js) {
     }
     
     function insertReturn(forms) {
-        var result = forms.slice(0, forms.length - 2);
+        var result = forms.slice(0, forms.length - 1);
         var lastExpr = forms[forms.length - 1];
         if (checkForm(lastExpr, "var")) {
             // if the last expression was a var decl, put it back

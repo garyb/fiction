@@ -79,6 +79,9 @@ require(["playground", "reader", "expander", "compiler"], function (playground, 
         
         compiles.push(["operators", ["(var a 0) (++ a)", "(== 10 20)", "(! #f)", "(~ 36)", "(<= 10 20)"]]);
         
+        compiles.push(["eh", ["(import \"macros-2\") (var id 0) (fn () (++ id))",
+                              "(import \"macros-2\") (var genID (do (var id 0) (fn () (++ id)))) `(,(genID) ,(genID))"]]);
+        
         var runCompiles = function () {
             if (compiles.length > 0) {
                 var params = compiles.shift();
