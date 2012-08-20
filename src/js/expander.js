@@ -87,7 +87,11 @@ define(["util", "syntax"], function (util, syntax) {
     
     function expandAssign(atoms, form, env, imp, impChain) {
         syntax.checks["set!"](atoms, form);
-        var id = createForm("symbol", get(env, atoms[0].value));
+        var ev = get(env, atoms[0].value);
+        if (typeof ev === "function") {
+            error("cannot assign to syntax identifier", form);
+        }
+        var id = createForm("symbol", ev);
         var tmp = expand(atoms[1], env, imp, impChain);
         var result = createForm("list", [symbols["set!"], id].concat(tmp.value));
         return { value: result, env: tmp.env };
@@ -576,40 +580,15 @@ define(["util", "syntax"], function (util, syntax) {
     //  Main
     // ------------------------------------------------------------------------
     
-    var expanders = {
-        "import": expandImport,
-        "var": expandVar,
-        "fn": expandFunc,
-        "set!": expandAssign,
-        "if": expandIf,
-        "quote": expandQuote,
-        "quasiquote": expandQuasiQuote,
-        "unquote": invalidUnquoteUse,
-        "unquote-splicing": invalidUnquoteUse,
-        "define-syntax": expandDefineSyntax,
-        "syntax-rules": invalidSyntaxRulesUse
-    };
-
     function expand(form, env, imp, impChain) {
         var result = form;
         if (form.type === "list" && form.value.length > 0) {
             var car = form.value[0];
             var cdr = form.value.slice(1);
-            if (car.type === "symbol") {
-            
-                if (env.hasOwnProperty(car.value)) {
-                    // TODO: hacked in support for macro scoping. This is 
-                    // basically what needs to happen, but needs some refinement
-                    // to ensure transformers are never used as symbols anywhere
-                    var ev = get(env, car.value);
-                    if (typeof ev === "function") {
-                        return ev(cdr, form, env, imp, impChain);
-                    }
-                } else {
-                    var expander = expanders[car.value];
-                    if (expander) {
-                        return expander(cdr, form, env, imp, impChain);
-                    }
+            if (car.type === "symbol" && env.hasOwnProperty(car.value)) {
+                var ev = get(env, car.value);
+                if (typeof ev === "function") {
+                    return ev(cdr, form, env, imp, impChain);
                 }
             }
             var tmp = expandAll(form.value, env, imp, impChain);
@@ -618,7 +597,7 @@ define(["util", "syntax"], function (util, syntax) {
         } else if (form.type === "symbol" && env.hasOwnProperty(form.value)) {
             var sym = get(env, form.value);
             if (typeof sym === "function") {
-                sym = form.value;
+                error(form.value + ": bad syntax", form);
             }
             result = createForm("symbol", sym);
         }
@@ -636,7 +615,19 @@ define(["util", "syntax"], function (util, syntax) {
     }
     
     function expandScript(forms, handleImport, k) {
-        var env = {};
+        var env = {
+            "import": expandImport,
+            "var": expandVar,
+            "fn": expandFunc,
+            "set!": expandAssign,
+            "if": expandIf,
+            "quote": expandQuote,
+            "quasiquote": expandQuasiQuote,
+            "unquote": invalidUnquoteUse,
+            "unquote-splicing": invalidUnquoteUse,
+            "define-syntax": expandDefineSyntax,
+            "syntax-rules": invalidSyntaxRulesUse
+        };
         var imports = findAllImports(forms);
         var imported = {};
         var loadNextImport = function () {
