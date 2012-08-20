@@ -161,8 +161,8 @@ define(["util"], function (util) {
     ]);
     
     var allOperators = {};
-    util.copyProps(prefixOps, {});
-    util.copyProps(infixOps, {});
+    util.copyProps(prefixOps, allOperators);
+    util.copyProps(infixOps, allOperators);
     
     var allSymbols = {};
     util.copyProps(keywords, allSymbols);

@@ -64,17 +64,20 @@ define(["util", "javascript"], function (util, js) {
     function get(env, id, form) {
         if (env.hasOwnProperty(id)) {
             return env[id];
-        } else if (js.values.hasOwnProperty(id)) {
-            return js.values[id];
-        } else if (js.functions.hasOwnProperty(id)) {
-            return js.functions[id];
-        } else if (js.objects.hasOwnProperty(id)) {
-            return js.objects[id];
-        } else if (js.operators.hasOwnProperty(id)) {
-            return js.operators[id];
-        } else {
-            error("Undefined identifier '" + id + "'", form);
         }
+        if (js.values.hasOwnProperty(id)) {
+            return js.values[id];
+        }
+        if (js.functions.hasOwnProperty(id)) {
+            return js.functions[id];
+        }
+        if (js.objects.hasOwnProperty(id)) {
+            return js.objects[id];
+        }
+        if (js.allOperators.hasOwnProperty(id)) {
+            return js.allOperators[id];
+        }
+        error("Undefined identifier '" + id + "'", form);
     }
     
     // ------------------------------------------------------------------------
@@ -151,7 +154,7 @@ define(["util", "javascript"], function (util, js) {
             var obj = compile(args[0].value[1], env);
             assignee = "(" + obj.value + ")" + args[0].value[0].value;
         } else {
-            assignee = compileSymbol(args[0], env);;
+            assignee = compileSymbol(args[0], env);
         }
         
         var tmp = compile(args[1], env);
@@ -304,6 +307,13 @@ define(["util", "javascript"], function (util, js) {
         if (fnf.type === "symbol" && fnf.value.charAt(0) === ".") {
             var obj = compile(args[0], env);
             return { value: "(" + obj.value + ")" + fnf.value, env: env };
+        }
+        if (fnf.type === "symbol" && js.infixOps.hasOwnProperty(fnf.value)) {
+            var x = compile(args[0], env);
+            env = x.env;
+            var y = compile(args[1], env);
+            env = y.env;
+            return { value: "(" + x.value + ") == (" + y.value + ")", env: env };
         }
         var tmp = compile(fnf, env);
         var fnv = tmp.value;

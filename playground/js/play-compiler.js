@@ -77,6 +77,8 @@ require(["playground", "reader", "expander", "compiler"], function (playground, 
         
         compiles.push([".access", ["((.sin Math) 26)", "(set! (.foo window) 100) (.foo window)"]]);
         
+        compiles.push(["operators", ["(var a 0) (++ a)", "(== 10 20)", "(! #f)", "(~ 36)"]]);
+        
         var runCompiles = function () {
             if (compiles.length > 0) {
                 var params = compiles.shift();
