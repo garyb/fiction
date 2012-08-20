@@ -1,0 +1,26 @@
+{
+  "name": "fiction",
+  "description": "Yet another lisp in JavaScript",
+  "version": "0.0.0",
+  "homepage": "http://github.com/garyb/fiction",
+  "author": "Gary Burgess",
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/garyb/fiction/blob/master/LICENSE"
+    }
+  ],
+  "main": "./src/js/main.js",
+  "engines": {
+    "node": ">=0.6.10"
+  },
+  "dependencies": {
+    "requirejs": ">=2.0.6"
+  },
+  "devDependencies": {},
+  "optionalDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/garyb/fiction.git"
+  }
+}
