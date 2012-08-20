@@ -313,7 +313,7 @@ define(["util", "javascript"], function (util, js) {
             env = x.env;
             var y = compile(args[1], env);
             env = y.env;
-            return { value: "(" + x.value + ") == (" + y.value + ")", env: env };
+            return { value: "(" + x.value + ") " + fnf.value + " (" + y.value + ")", env: env };
         }
         var tmp = compile(fnf, env);
         var fnv = tmp.value;
