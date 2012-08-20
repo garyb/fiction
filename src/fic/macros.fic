@@ -10,6 +10,11 @@
 (define-syntax let
   (syntax-rules ()
     ((_ ((id val) ...) body bodies ...) ((fn (id ...) body bodies ...) val ...))))
+    
+(define-syntax cond
+  (syntax-rules (else)
+    ((_ (test-expr then-expr ...) (else else-expr ...)) (if test-expr (do then-expr ...) (do else-expr ...)))
+    ((_ (test-expr then-expr ...) exprs ...) (if test-expr (do then-expr ...) (cond exprs ...)))))
 
 (define-syntax and
   (syntax-rules ()
