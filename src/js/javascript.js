@@ -118,7 +118,15 @@ define(["util"], function (util) {
         "Math"
     ]);
     
-    var operators = makeMap([
+    var prefixOps = makeMap([
+        "~",
+        "!",
+        "-",
+        "++",
+        "--"
+    ]);
+    
+    var infixOps = makeMap([
         "<",
         ">",
         "<=",
@@ -131,16 +139,12 @@ define(["util"], function (util) {
         "-",
         "*",
         "%",
-        "++",
-        "--",
         "<<",
         ">>",
         ">>>",
         "&",
         "|",
         "^",
-        "!",
-        "~",
         "&&",
         "||",
         "=",
@@ -156,6 +160,10 @@ define(["util"], function (util) {
         "^="
     ]);
     
+    var allOperators = {};
+    util.copyProps(prefixOps, {});
+    util.copyProps(infixOps, {});
+    
     var allSymbols = {};
     util.copyProps(keywords, allSymbols);
     util.copyProps(reserved, allSymbols);
@@ -169,7 +177,9 @@ define(["util"], function (util) {
         values: values,
         functions: functions,
         objects: objects,
-        operators: operators,
+        prefixOps: prefixOps,
+        infixOps: infixOps,
+        allOperators: allOperators,
         allSymbols: allSymbols
     };
 
