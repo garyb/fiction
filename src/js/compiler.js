@@ -41,7 +41,7 @@ define(["util", "javascript"], function (util, js) {
         if (rx.test(id)) {
             return id;
         }
-        return id.replace(/[^a-z0-9_$]/g, function (chr) {
+        return id.replace(/[^a-z0-9_$]/gi, function (chr) {
             return chrSubst[chr] || error("Don't know how to handle non-JS-safe id character '" + chr + "' yet");
         });
     }
