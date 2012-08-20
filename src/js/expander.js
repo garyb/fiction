@@ -16,17 +16,11 @@ define(["util", "syntax"], function (util, syntax) {
     //  Identifier environment
     // ------------------------------------------------------------------------
     
-    var natives = util.makeMap([
-        "import", 
-        "var", "fn", "set!", "if", 
-        "quote", "quasiquote", "unquote", "unquote-splicing"
-    ]);
-    
     function put(env, id) {
         var newId = id;
-        if (env.hasOwnProperty(newId) || natives.hasOwnProperty(newId)) {
+        if (env.hasOwnProperty(newId)) {
             var n = 1;
-            while (env.hasOwnProperty(newId + n) || natives.hasOwnProperty(newId + n)) {
+            while (env.hasOwnProperty(newId + n)) {
                 n++;
             }
             newId += n.toString();
