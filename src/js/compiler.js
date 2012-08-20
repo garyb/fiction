@@ -285,6 +285,10 @@ define(["util", "javascript"], function (util, js) {
     };
     
     function compileApply(fnf, args, env) {
+        if (fnf.type === "symbol" && fnf.value.charAt(0) === ".") {
+            var obj = compile(args[0], env);
+            return { value: "(" + obj.value + ")" + fnf.value, env: env };
+        }
         var tmp = compile(fnf, env);
         var fnv = tmp.value;
         env = tmp.env;
