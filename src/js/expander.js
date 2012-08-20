@@ -85,14 +85,22 @@ define(["util", "syntax"], function (util, syntax) {
     
     function expandAssign(atoms, form, env, imp, impChain) {
         syntax.checks["set!"](atoms, form);
-        var ev = get(env, atoms[0].value);
-        if (typeof ev === "function") {
-            error("cannot assign to syntax identifier", form);
+        var result, tmp, prop;
+        if (atoms[0].type === "list") {
+            tmp = expand(atoms[0].value[1], env, imp, impChain);
+            prop = createForm("list", [atoms[0].value[0]].concat(tmp.value));
+            env = tmp.env;
+        } else {
+            var ev = get(env, atoms[0].value);
+            if (typeof ev === "function") {
+                error("cannot assign to syntax identifier", form);
+            }
+            prop = createForm("symbol", ev);
         }
-        var id = createForm("symbol", ev);
-        var tmp = expand(atoms[1], env, imp, impChain);
-        var result = createForm("list", [symbols["set!"], id].concat(tmp.value));
-        return { value: result, env: tmp.env };
+        tmp = expand(atoms[1], env, imp, impChain);
+        env = tmp.env;
+        result = createForm("list", [symbols["set!"], prop].concat(tmp.value));
+        return { value: result, env: env };
     }
     
     function expandIf(atoms, form, env, imp, impChain) {

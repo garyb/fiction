@@ -74,7 +74,9 @@ require(["playground", "reader", "expander", "util"], function (playground, read
                                 "(import \"macros-4\") (let ((a 1) (b 2) (c 3)) `(,a ,b ,c))",
                                 "(import \"macros-5\") (mc (1 2 3) (a b c))",
                                 "(import \"macros-6\") (<++ 1 2 3 4)",
-                                "(import \"macros-6\") (++> 1 2 3 4)"]]);
+                                "(import \"macros-6\") (++> 1 2 3 4)"]]);    
+                                
+        things.push(["properties", ["(.sin Math)", ".sin", "(set! (.window foo) 100)"]]);
         
         var runThings = function () {
             if (things.length > 0) {
