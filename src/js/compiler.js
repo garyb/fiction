@@ -11,6 +11,10 @@ define(["util", "javascript"], function (util, js) {
         throw new Error(msg + " @ " + util.printRawForm(form));
     }
     
+    // ------------------------------------------------------------------------
+    //  Identifier environment
+    // ------------------------------------------------------------------------
+    
     var chrSubst = {
         "-": "_",
         "=": "$eq",
@@ -65,6 +69,10 @@ define(["util", "javascript"], function (util, js) {
         }
     }
     
+    // ------------------------------------------------------------------------
+    //  Atom compilation
+    // ------------------------------------------------------------------------
+    
     function compileLiteral(form) {
         if (typeof form.value === "string") {
             // TODO: cover line breaks etc. too
@@ -76,6 +84,10 @@ define(["util", "javascript"], function (util, js) {
     function compileSymbol(form, env) {
         return get(env, form.value, form);
     }
+    
+    // ------------------------------------------------------------------------
+    //  Special form compilation
+    // ------------------------------------------------------------------------
     
     function compileVar(args, env) {
         var tmp = put(env, args[0].value);
@@ -211,7 +223,56 @@ define(["util", "javascript"], function (util, js) {
             var tmp = compile(args[0], env);
             return { value: statement + " " + tmp.value, env: env };
         };
-    }   
+    }
+    
+    // ------------------------------------------------------------------------
+    //  Quoted symbol usage detection
+    // ------------------------------------------------------------------------
+    
+    function usesSymbolQuote(form, quoteType) {
+        if (quoteType === "quasiquote" && (checkForm(form, "unquote") || checkForm(form, "unquote-splicing"))) {
+            return usesSymbolQuote(form);
+        }
+        if (quoteType === "quote") {
+            if (form.type === "symbol") {
+                return true;
+            }
+            if (form.type === "list") {
+                return anyUsesSymbolQuote(form.value, quoteType);
+            }
+        }
+        if (quoteType === "quasiquote") {
+            if (form.type === "symbol") {
+                return true;
+            }
+            if (form.type === "list") {
+                return anyUsesSymbolQuote(form.value, quoteType);
+            }
+        }
+        if (checkForm(form, "quote")) {
+            return usesSymbolQuote(form.value[1], "quote");
+        }
+        if (checkForm(form, "quasiquote")) {
+            return usesSymbolQuote(form.value[1], "quasiquote");
+        }
+        if (form.type === "list") {
+            return anyUsesSymbolQuote(form.value);
+        }
+        return false;
+    }
+    
+    function anyUsesSymbolQuote(forms, quoteType) {
+        for (var i = 0, l = forms.length; i < l; i++) {
+            if (usesSymbolQuote(forms[i], quoteType)) {
+                return true;
+            }
+        }
+        return false;
+    }    
+    
+    // ------------------------------------------------------------------------
+    //  Main
+    // ------------------------------------------------------------------------
     
     var specialForms = {
         "var": compileVar,
@@ -267,47 +328,6 @@ define(["util", "javascript"], function (util, js) {
             env = tmp.env;
         }
         return { value: result.join(";\n") + ";", env: env };
-    }
-    
-    function usesSymbolQuote(form, quoteType) {
-        if (quoteType === "quasiquote" && (checkForm(form, "unquote") || checkForm(form, "unquote-splicing"))) {
-            return usesSymbolQuote(form);
-        }
-        if (quoteType === "quote") {
-            if (form.type === "symbol") {
-                return true;
-            }
-            if (form.type === "list") {
-                return anyUsesSymbolQuote(form.value, quoteType);
-            }
-        }
-        if (quoteType === "quasiquote") {
-            if (form.type === "symbol") {
-                return true;
-            }
-            if (form.type === "list") {
-                return anyUsesSymbolQuote(form.value, quoteType);
-            }
-        }
-        if (checkForm(form, "quote")) {
-            return usesSymbolQuote(form.value[1], "quote");
-        }
-        if (checkForm(form, "quasiquote")) {
-            return usesSymbolQuote(form.value[1], "quasiquote");
-        }
-        if (form.type === "list") {
-            return anyUsesSymbolQuote(form.value);
-        }
-        return false;
-    }
-    
-    function anyUsesSymbolQuote(forms, quoteType) {
-        for (var i = 0, l = forms.length; i < l; i++) {
-            if (usesSymbolQuote(forms[i], quoteType)) {
-                return true;
-            }
-        }
-        return false;
     }
     
     function compileScript(forms, env) {
