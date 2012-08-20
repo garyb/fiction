@@ -6,3 +6,17 @@
   (syntax-rules ()
     ((_ form) form)
     ((_ form ...) (do! form ...))))
+
+(define-syntax let
+  (syntax-rules ()
+    ((_ ((id val) ...) body bodies ...) ((fn (id ...) body bodies ...) val ...))))
+
+(define-syntax and
+  (syntax-rules ()
+    ((_ expr1 expr2) (if expr1 (if expr2 #t #f) #f))
+    ((_ expr1 exprs ...) (if expr1 (if (and exprs ...) #t #f) #f))))
+
+(define-syntax or
+  (syntax-rules ()
+    ((_ expr1 expr2) (if expr1 #t (if expr2 #t #f)))
+    ((_ expr1 exprs ...) (if expr1 #t (if (or exprs ...) #t #f)))))
