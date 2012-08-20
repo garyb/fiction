@@ -64,6 +64,14 @@ define(["util", "javascript"], function (util, js) {
     function get(env, id, form) {
         if (env.hasOwnProperty(id)) {
             return env[id];
+        } else if (js.values.hasOwnProperty(id)) {
+            return js.values[id];
+        } else if (js.functions.hasOwnProperty(id)) {
+            return js.functions[id];
+        } else if (js.objects.hasOwnProperty(id)) {
+            return js.objects[id];
+        } else if (js.operators.hasOwnProperty(id)) {
+            return js.operators[id];
         } else {
             error("Undefined identifier '" + id + "'", form);
         }
