@@ -596,6 +596,7 @@ define(["util", "syntax"], function (util, syntax) {
                     return ev(cdr, form, env, imp, impChain);
                 }
             }
+            syntax.checkApply(form.value, form);
             var tmp = expandAll(form.value, env, imp, impChain);
             result = createForm("list", tmp.value);
             env = tmp.env;
