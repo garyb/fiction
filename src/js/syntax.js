@@ -153,10 +153,10 @@ define(["util"], function (util) {
     function checkQuoteExpr(type) {
         return function (atoms, expr) {
             if (atoms.length === 0) {
-                error(type + ": empty expression", datum);
+                error(type + ": empty expression", expr);
             }
             if (atoms.length > 1) {
-                error(type + ": too many arguments", datum);
+                error(type + ": too many arguments", expr);
             }
         };
     }
@@ -236,8 +236,20 @@ define(["util"], function (util) {
             }
         }
     }
+    
+    function checkApply(atoms, expr) {
+        if (atoms[0].type === "symbol" && atoms[0].value.charAt(0) === ".") {
+            if (atoms.length === 1) {
+                error("invalid property reference, no object specified", expr);
+            }
+            if (atoms.length > 2) {
+                error("invalid property reference, too many arguments", expr);
+            }
+        }
+    }
 
     return {
+        checkApply: checkApply,
         checks: {
             "import": checkImport,
             "var": checkVar,
