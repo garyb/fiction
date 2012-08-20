@@ -186,10 +186,8 @@ define(["util", "syntax"], function (util, syntax) {
         syntax.checks["define-syntax"](atoms, form);
         var syntaxId = atoms[0].value;
         var transformer = atoms[1];
-        
         var rules = parseSyntaxRules(syntaxId, transformer.value.slice(1), transformer, env);
-        
-        put(env, syntaxId, function (atoms, form, env, imp, impChain) {
+        var tmp = put(env, syntaxId, function (atoms, form, env, imp, impChain) {
             var result = null;
             for (var i = 0, l = rules.length; i < l; i++) {
                 var rule = rules[i];
@@ -204,7 +202,7 @@ define(["util", "syntax"], function (util, syntax) {
             }
             return expand(result, env, imp, impChain);
         });
-        return { value: [], env: env };
+        return { value: [], env: tmp.env };
     }
     
     // ------------------------------------------------------------------------
