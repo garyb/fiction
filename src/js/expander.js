@@ -150,16 +150,27 @@ define(["util", "syntax"], function (util, syntax) {
         var tmp;
         if (form.type === "list") {
             var values = [];
-            if (checkForm(form, "unquote") || checkForm(form, "unquote-splicing")) {
-                values = [form.value[0]];
+            if (checkForm(form, "unquote")) {
+                var sym = form.value[0];
+                syntax.checks.unquote(form.value.slice(1), form);
+                values = [sym];
                 tmp = expand(form.value[1], env, imp, impChain);
                 values = values.concat(tmp.value);
                 env = tmp.env;
+            } else if (checkForm(form, "unquote-splicing")) {
+                error("unquote-splicing: not in list", form);
             } else {
                 for (var i = 0, l = form.value.length; i < l; i++) {
-                    tmp = expandQuasiQuoteValue(form.value[i], env, imp, impChain);
-                    values = values.concat(tmp.value);
-                    env = tmp.env;
+                    if (checkForm(form.value[i], "unquote-splicing")) {
+                        syntax.checks["unquote-splicing"](form.value[i].value.slice(1), form.value[i]);
+                        tmp = expandQuasiQuoteValue(form.value[i].value[1], env, imp, impChain);
+                        values = values.concat(tmp.value);
+                        env = tmp.env;
+                    } else {
+                        tmp = expandQuasiQuoteValue(form.value[i], env, imp, impChain);
+                        values = values.concat(tmp.value);
+                        env = tmp.env;
+                    }
                 }
             }
             return { value: [createForm("list", values)], env: env };

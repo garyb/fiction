@@ -143,83 +143,21 @@ define(["util"], function (util) {
             error("if: no else clause", expr);
         }
     }
-
+   
     /**
      * Checks whether `atoms` are valid values for an application of the
-     * primitive `quote`. The valid form for `if` is `(quote datum)`
+     * primitive `type`. The valid form for `type` is `(,type datum)`
      * where `datum` is any s-expression. The full version of the form being 
      * checked is provided as `expr` for use in error messages.
      */
-    function checkQuote(atoms, expr) {
-        if (atoms.length === 0) {
-            error("quote: empty expression", expr);
-        }
-        if (atoms.length > 1) {
-            error("quote: too many arguments", expr);
-        }
-    }
-    
-    /**
-     * Checks whether `atoms` are valid values for an application of the
-     * primitive `quasiquote`. The valid form for `quasiquote` is 
-     * `(quasiquote datum)` where `datum` is any s-expression. The syntax of any
-     * `unquote` or `unquote-splicing` forms within datum are also checked, 
-     * although the unquoted expressions are not. The full version of the form 
-     * being checked is provided as `expr` for use in error messages.
-     */
-    function checkQuasiQuote(atoms, expr) {
-        if (atoms.length === 0) {
-            error("quasiquote: empty expression", expr);
-        }
-        if (atoms.length > 1) {
-            error("quasiquote: too many arguments", expr);
-        }
-        checkQuasiQuoteValue(atoms[0]);
-    }
-    
-    /**
-     * Checks `datum` for uses of `unquote` and `unquote-splicing` to ensure 
-     * they are of the correct form - `(unquote expr)` or 
-     * `(unquote-splicing expr)` where `expr` is any valid expression.
-     */
-    function checkQuasiQuoteValue(datum) {
-        if (datum.type === "list" && datum.value.length > 0) {
-            var car = datum.value[0];
-            if (car.type === "symbol") {
-                if (car.value === "unquote") {
-                    if (datum.value.length === 1) {
-                        error("unquote: empty expression", datum);
-                    }
-                    if (datum.value.length > 2) {
-                        error("unquote: too many arguments", datum);
-                    }
-                } else if (car.value === "unquote-splicing") {
-                    error("unquote-splicing: not in list", datum);
-                }
+    function checkQuoteExpr(type) {
+        return function (atoms, expr) {
+            if (atoms.length === 0) {
+                error(type + ": empty expression", datum);
             }
-            for (var i = 0, l = datum.value.length; i < l; i++) {
-                var f = datum.value[i];
-                if (util.checkForm(f, "unquote-splicing")) {
-                    if (f.value.length === 1) {
-                        error("unquote-splicing: empty expression", f);
-                    }
-                    if (f.value.length > 2) {
-                        error("unquote-splicing: too many arguments", f);
-                    }
-                } else {
-                    checkQuasiQuoteValue(datum.value[i]);
-                }
+            if (atoms.length > 1) {
+                error(type + ": too many arguments", datum);
             }
-        }
-    }
-    
-    /**
-     * Rasises an error for primitive form of `type` because it should only 
-     * appear inside a quasiquote.
-     */
-    function quasiQuoteError(type) {
-        return function () {
-            error(type + ": not in quasiquote", arguments[1]);
         };
     }
     
@@ -306,10 +244,10 @@ define(["util"], function (util) {
             "fn": checkFunction,
             "set!": checkAssign,
             "if": checkIf,
-            "quote": checkQuote,
-            "quasiquote": checkQuasiQuote,
-            "unquote": quasiQuoteError("unquote"),
-            "unquote-splicing": quasiQuoteError("unquote-splicing"),
+            "quote": checkQuoteExpr("quote"),
+            "quasiquote": checkQuoteExpr("quasiquote"),
+            "unquote": checkQuoteExpr("unquote"),
+            "unquote-splicing": checkQuoteExpr("unquote-splicing"),
             "define-syntax": checkDefineSyntax,
             "syntax-rules": checkSyntaxRules
         }
