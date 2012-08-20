@@ -52,10 +52,16 @@ define(["util", "syntax"], function (util, syntax) {
     var symbols = {
         "var": createForm("symbol", "var"),
         "fn": createForm("symbol", "fn"),
-        "quasiquote": createForm("symbol", "quasiquote")
+        "set!": createForm("symbol", "set!"),
+        "if": createForm("symbol", "if"),
+        "quote": createForm("symbol", "quote"),
+        "quasiquote": createForm("symbol", "quasiquote"),
+        "unquote": createForm("symbol", "unquote"),
+        "unquote-splicing": createForm("symbol", "unquote-splicing")
     };
     
     function expandImport(atoms, form, env, imp, impChain) {
+        syntax.checks["import"](atoms, form);
         var result = [];
         for (var i = 0, l = atoms.length; i < l; i++) {
             var name = atoms[i].value;
@@ -71,6 +77,7 @@ define(["util", "syntax"], function (util, syntax) {
     }
     
     function expandVar(atoms, form, env, imp, impChain) {
+        syntax.checks["var"](atoms, form);
         var tmp = put(env, atoms[0].value);
         var id = createForm("symbol", tmp.id);
         tmp = expand(atoms[1], tmp.env, imp, impChain);
@@ -78,7 +85,28 @@ define(["util", "syntax"], function (util, syntax) {
         return { value: result, env: tmp.env };
     }
     
+    function expandAssign(atoms, form, env, imp, impChain) {
+        syntax.checks["set!"](atoms, form);
+        var id = createForm("symbol", get(env, atoms[0].value));
+        var tmp = expand(atoms[1], env, imp, impChain);
+        var result = createForm("list", [symbols["set!"], id].concat(tmp.value));
+        return { value: result, env: tmp.env };
+    }
+    
+    function expandIf(atoms, form, env, imp, impChain) {
+        syntax.checks["if"](atoms, form);
+        var tmp = expand(atoms[0], env, imp, impChain);
+        var test = tmp.value;
+        tmp = expand(atoms[1], tmp.env, imp, impChain);
+        var then = tmp.value;
+        tmp = expand(atoms[2], tmp.env, imp, impChain);
+        var elss = tmp.value;
+        var result = createForm("list", [symbols["if"]].concat(test).concat(then).concat(elss));
+        return { value: result, env: tmp.env };
+    }
+    
     function expandFunc(atoms, form, env, imp, impChain) {
+        syntax.checks.fn(atoms, form);
         var result = null, tmp = null;
         var args = atoms[0];
         var body = atoms.slice(1);
@@ -104,16 +132,18 @@ define(["util", "syntax"], function (util, syntax) {
         return { value: result, env: env };
     }
     
-    function expandQuote() {
-        return { value: arguments[1], env: arguments[2] };
+    function expandQuote(atoms, form, env) {
+        syntax.checks.quote(atoms, form);
+        return { value: form, env: env };
     }
     
     function expandQuasiQuote(atoms, form, env, imp, impChain) {
+        syntax.checks.quasiquote(atoms, form);
         var sym = symbols.quasiquote;
         var tmp = expandQuasiQuoteValue(atoms[0], env, imp, impChain);
         return { value: createForm("list", [sym].concat(tmp.value)), env: env };
     }
-    
+
     function expandQuasiQuoteValue(form, env, imp, impChain) {
         var tmp;
         if (form.type === "list") {
@@ -135,7 +165,12 @@ define(["util", "syntax"], function (util, syntax) {
         return { value: [form], env: env };
     }
     
+    function invalidUnquoteUse(atoms, form) {
+        error(form.value[0] + ": not in quasiquote", form);
+    }
+    
     function expandDefineSyntax(atoms, form, env) {
+        syntax.checks["define-syntax"](atoms, form);
         var syntaxId = atoms[0].value;
         var transformer = atoms[1];
         
@@ -502,6 +537,10 @@ define(["util", "syntax"], function (util, syntax) {
         };
     }
     
+    function invalidSyntaxRulesUse(atoms, form) {
+        error("syntax-rules: not in define-syntax", form);
+    }
+    
     // ------------------------------------------------------------------------
     //  Import analysis
     // ------------------------------------------------------------------------
@@ -541,9 +580,14 @@ define(["util", "syntax"], function (util, syntax) {
         "import": expandImport,
         "var": expandVar,
         "fn": expandFunc,
+        "set!": expandAssign,
+        "if": expandIf,
         "quote": expandQuote,
         "quasiquote": expandQuasiQuote,
-        "define-syntax": expandDefineSyntax
+        "unquote": invalidUnquoteUse,
+        "unquote-splicing": invalidUnquoteUse,
+        "define-syntax": expandDefineSyntax,
+        "syntax-rules": invalidSyntaxRulesUse
     };
 
     function expand(form, env, imp, impChain) {
@@ -562,10 +606,6 @@ define(["util", "syntax"], function (util, syntax) {
                         return ev(cdr, form, env, imp, impChain);
                     }
                 } else {
-                    var syntaxCheck = syntax.checks[car.value];
-                    if (syntaxCheck) {
-                        syntaxCheck(cdr, form);
-                    }
                     var expander = expanders[car.value];
                     if (expander) {
                         return expander(cdr, form, env, imp, impChain);
