@@ -65,7 +65,8 @@ require(["playground", "reader", "expander", "util"], function (playground, read
         
         things.push(["variable & argument numbering", ["(var a 100) (var a 200) (fn (a) a) a (fn a a) a"]]);
         
-        things.push(["special form redefinition", ["(var set! (fn (x) `(bad-idea ,x))) (set! 100)"]]);
+        things.push(["special form redefinition", ["(var set! (fn (x) `(bad-idea ,x))) (set! 100)",
+                                                   "(var test (fn (set!) (set! 100))) (test (fn (x) x))"]]);
         
         things.push(["macros", ["(import \"macros-1\") (do! 1) (do! 1 2 3)",
                                 "(import \"macros-2\") (do 1) (do 1 2 3)",
