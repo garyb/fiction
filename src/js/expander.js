@@ -581,8 +581,12 @@ define(["util", "syntax"], function (util, syntax) {
                         i++;
                     }
                     
-                    values = values.concat(value);
+                    if (value.length !== 1 || value[0] !== undefined) {
+                        values = values.concat(value);
+                    }
                 }
+                
+                
                 
                 return createForm("list", values);
             }
@@ -668,6 +672,7 @@ define(["util", "syntax"], function (util, syntax) {
     
     function expandAll(seq, env, imp, impChain) {
         var result = [];
+        
         for (var i = 0, l = seq.length; i < l; i++) {
             var tmp = expand(seq[i], env, imp, impChain);
             result = result.concat(tmp.value);
