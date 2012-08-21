@@ -81,6 +81,16 @@ require(["playground", "reader", "expander", "compiler"], function (playground, 
         
         compiles.push(["eh", ["(import \"macros-2\") (var id 0) (fn () (++ id))",
                               "(import \"macros-2\") (var genID (do (var id 0) (fn () (++ id)))) `(,(genID) ,(genID))"]]);
+                              
+        compiles.push(["properties", ["(.sin Math)", 
+                                      "(set! (.foo window) 100)",
+                                      "(. window \"document\")",
+                                      "(. window 'document)",
+                                      "(var a '(1 2 3)) (. a 0)"]]);
+                                      
+        compiles.push(["objects", ["(obj)", 
+                                   "(obj (a 1) (b 2))",
+                                   "(obj (a (+ 1 2)))"]]);
         
         var runCompiles = function () {
             if (compiles.length > 0) {

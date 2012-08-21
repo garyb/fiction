@@ -76,7 +76,16 @@ require(["playground", "reader", "expander", "util"], function (playground, read
                                 "(import \"macros-6\") (<++ 1 2 3 4)",
                                 "(import \"macros-6\") (++> 1 2 3 4)"]]);    
                                 
-        things.push(["properties", ["(.sin Math)", ".sin", "(set! (.window foo) 100)"]]);
+        things.push(["properties", ["(.sin Math)", 
+                                    ".sin", 
+                                    "(set! (.foo window) 100)",
+                                    "(. window \"document\")",
+                                    "(.max Math 10 20 30)",
+                                    "(var a '(1 2 3)) (. a 0)"]]);
+                                    
+        things.push(["objects", ["(obj)", 
+                                 "(obj (a 1) (b 2))",
+                                 "(obj (a (+ 1 2)))"]]);
         
         var runThings = function () {
             if (things.length > 0) {

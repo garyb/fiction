@@ -39,7 +39,8 @@ define(["util", "syntax"], function (util, syntax) {
         if (env.hasOwnProperty(id)) {
             return env[id];
         } else {
-            error("Undefined identifier '" + id + "'", form);
+            return id;
+            //error("Undefined identifier '" + id + "'", form);
         }
     }
     
@@ -50,12 +51,14 @@ define(["util", "syntax"], function (util, syntax) {
     var symbols = {
         "var": createForm("symbol", "var"),
         "fn": createForm("symbol", "fn"),
+        "obj": createForm("symbol", "obj"),
         "set!": createForm("symbol", "set!"),
         "if": createForm("symbol", "if"),
         "quote": createForm("symbol", "quote"),
         "quasiquote": createForm("symbol", "quasiquote"),
         "unquote": createForm("symbol", "unquote"),
-        "unquote-splicing": createForm("symbol", "unquote-splicing")
+        "unquote-splicing": createForm("symbol", "unquote-splicing"),
+        ".": createForm("symbol", ".")
     };
     
     function expandImport(atoms, form, env, imp, impChain) {
@@ -87,9 +90,15 @@ define(["util", "syntax"], function (util, syntax) {
         syntax.checks["set!"](atoms, form);
         var result, tmp, prop;
         if (atoms[0].type === "list") {
-            tmp = expand(atoms[0].value[1], env, imp, impChain);
-            prop = createForm("list", [atoms[0].value[0]].concat(tmp.value));
-            env = tmp.env;
+            if (atoms[0].value[0].value === ".") {
+                tmp = expandAll(atoms[0].value, env, imp, impChain);
+                prop = createForm("list", tmp.value);
+                env = tmp.env;
+            } else {
+                tmp = expandShortProp(atoms[0], env, imp, impChain);
+                prop = tmp.value;
+                env = tmp.env;
+            }
         } else {
             var ev = get(env, atoms[0].value);
             if (typeof ev === "function") {
@@ -101,6 +110,27 @@ define(["util", "syntax"], function (util, syntax) {
         env = tmp.env;
         result = createForm("list", [symbols["set!"], prop].concat(tmp.value));
         return { value: result, env: env };
+    }
+    
+    function expandShortProp(form, env, imp, impChain) {
+        var propName = createForm("literal", form.value[0].value.substring(1));
+        var prop = createForm("list", [symbols["."], form.value[1], propName]);
+        var tmp = expandProp(prop.value.slice(1), prop, env, imp, impChain);
+        var result = tmp.value;
+        if (form.value.length > 2) {
+            result = createForm("list", [result].concat(form.value.slice(2)));
+        }
+        return { value: result, env: env };
+    }
+    
+    function expandProp(atoms, form, env, imp, impChain) {
+        syntax.checks["."](atoms, form);
+        var tmp = expand(atoms[0], env, imp, impChain);
+        var obj = tmp.value;
+        tmp = expand(atoms[1], tmp.env, imp, impChain);
+        var prop = tmp.value;
+        var result = createForm("list", [symbols["."]].concat(obj).concat(prop));
+        return { value: result, env: tmp.env };
     }
     
     function expandIf(atoms, form, env, imp, impChain) {
@@ -139,6 +169,21 @@ define(["util", "syntax"], function (util, syntax) {
             tmp = expandAll(body, restEnv, imp, impChain);
             result = createForm("list", [symbols.fn, restId].concat(tmp.value));
         }
+        return { value: result, env: env };
+    }
+    
+    function expandObject(atoms, form, env, imp, impChain) {
+        syntax.checks.obj(atoms, form);
+        var entries = [];
+        for (var i = 0, l = atoms.length; i < l; i++) {
+            var atom = atoms[i];
+            var key = atom.value[0];
+            var val = atoms.value[1];
+            var tmp = expand(val, env, imp, impChain);
+            entries[i] = createForm("list", [key, tmp.value]); 
+            env = tmp.env;
+        }
+        var result = createForm("list", [symbols.obj].concat(entries));
         return { value: result, env: env };
     }
     
@@ -598,13 +643,16 @@ define(["util", "syntax"], function (util, syntax) {
         if (form.type === "list" && form.value.length > 0) {
             var car = form.value[0];
             var cdr = form.value.slice(1);
-            if (car.type === "symbol" && env.hasOwnProperty(car.value)) {
-                var ev = get(env, car.value);
-                if (typeof ev === "function") {
-                    return ev(cdr, form, env, imp, impChain);
+            if (car.type === "symbol") {
+                if (env.hasOwnProperty(car.value)) {
+                    var ev = get(env, car.value);
+                    if (typeof ev === "function") {
+                        return ev(cdr, form, env, imp, impChain);
+                    }
+                } else if (car.value.charAt(0) === "." && car.value.length > 1) {
+                    return expandShortProp(form, env, imp, impChain);
                 }
             }
-            syntax.checkApply(form.value, form);
             var tmp = expandAll(form.value, env, imp, impChain);
             result = createForm("list", tmp.value);
             env = tmp.env;
@@ -633,6 +681,7 @@ define(["util", "syntax"], function (util, syntax) {
             "import": expandImport,
             "var": expandVar,
             "fn": expandFunc,
+            ".": expandProp,
             "set!": expandAssign,
             "if": expandIf,
             "quote": expandQuote,

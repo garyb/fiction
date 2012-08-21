@@ -46,6 +46,12 @@ define(["util", "javascript"], function (util, js) {
         });
     }
     
+    function isSafeJSPropName(name) {
+        return (/^[a-z_$][a-z0-9_$]*$/i).test(name) && 
+               !js.keywords.hasOwnProperty(name) && 
+               !js.reserved.hasOwnProperty(name);
+    }    
+    
     function put(env, id, jsid) {
         jsid = makeJSId(jsid || id);
         if (env.hasOwnProperty(jsid)) {
@@ -77,7 +83,8 @@ define(["util", "javascript"], function (util, js) {
         if (js.allOperators.hasOwnProperty(id)) {
             return js.allOperators[id];
         }
-        error("Undefined identifier '" + id + "'", form);
+        return id;
+        //error("Undefined identifier '" + id + "'", form);
     }
     
     // ------------------------------------------------------------------------
@@ -105,7 +112,7 @@ define(["util", "javascript"], function (util, js) {
         var id = tmp.id;
         tmp = compile(args[1], tmp.env);
         return { value: "var " + id + " = " + tmp.value, env: tmp.env };
-    }
+    }    
     
     function compileFunc(args, env) {
         var result = null, tmp = null;
@@ -132,6 +139,34 @@ define(["util", "javascript"], function (util, js) {
         return { value: result, env: env };
     }
     
+    function compileObj(args, env) {
+        var entries = [];
+        for (var i = 0, l = args.length; i < l; i++) {
+            var arg = args[i];
+            var key = arg.value[0].value;
+            if (!isSafeJSPropName(key)) {
+                key = '"' + key + '"';
+            }
+            var tmp = compile(arg.value[1], env);
+            env = tmp.env;
+            entries[i] = key + ": " + tmp.value;
+        }
+        return { value: "({ " + entries.join(", ") + " })", env: env };
+    }
+    
+    function compileProp(args, env) {
+        var tmp = compile(args[0], env);
+        var obj = tmp.value;
+        var prop = args[1].value;
+        if (args[1].type === "literal" && isSafeJSPropName(prop)) {
+            return { value: obj + "." + prop, env: tmp.env };
+        } else {
+            tmp = compile(args[1], tmp.env);
+            prop = tmp.value;
+            return { value: obj + "[" + prop + "]", env: tmp.env };
+        }
+    }
+    
     function insertReturn(forms) {
         var result = forms.slice(0, forms.length - 1);
         var lastExpr = forms[forms.length - 1];
@@ -148,15 +183,13 @@ define(["util", "javascript"], function (util, js) {
     }
     
     function compileAssign(args, env, form) {
-        
         var assignee;
         if (args[0].type === "list") {
-            var obj = compile(args[0].value[1], env);
-            assignee = "(" + obj.value + ")" + args[0].value[0].value;
+            var obj = compile(args[0], env);
+            assignee = obj.value;
         } else {
             assignee = compileSymbol(args[0], env);
         }
-        
         var tmp = compile(args[1], env);
         return { value: assignee + " = " + tmp.value, env: tmp.env };
     }  
@@ -179,7 +212,7 @@ define(["util", "javascript"], function (util, js) {
     function compileQuoteValue(arg) {
         var result = null;
         if (arg.type === "literal") {
-            result = arg.value;
+            result = compileLiteral(arg);
         } else if (arg.type === "symbol") {
             result = "symbol(\"" + arg.value + "\")";
         } else if (arg.type === "list") {
@@ -296,6 +329,8 @@ define(["util", "javascript"], function (util, js) {
     var specialForms = {
         "var": compileVar,
         "fn": compileFunc,
+        "obj": compileObj,
+        ".": compileProp,
         "set!": compileAssign,
         "if": compileIf,
         "quote": compileQuote,

@@ -17,16 +17,15 @@ define(["util"], function (util) {
     }
 
     /**
-     * Checks whether `expr` is a valid object property - an expression of the
-     * form `(.name expr)` where `.name` is any symbol starting with `.` and
-     * `expr` is any valid expression.
+     * Checks whether `expr`'s syntax matches `(. <expr> <expr>)` or 
+     * `(.<id> <expr>)`.
      */
     function isProp(expr) {
-        if (expr.type === "list" && expr.value.length === 2) {
+        if (expr.type === "list") {
             var prop = expr.value[0];
-            if (prop.type === "symbol" && prop.value.charAt(0) === ".") {
-                return true;
-            }
+            return prop.type === "symbol" &&
+                   (prop.value === "." && expr.value.length === 3) ||
+                   (prop.value.charAt(0) === ".");
         }
         return false;
     }
@@ -100,6 +99,19 @@ define(["util"], function (util) {
             }
         } else if (!isStandardId(args)) {
             error("fn: invalid argument identifier", args);
+        }
+    }
+    
+    function checkObject(atoms) {
+        for (var i = 0, l = atoms.length; i < l; i++) {
+            var atom = atoms[i];
+            if (atoms[i].type !== "list" || atoms[i].value.length !== 2) {
+                error("obj: entry is not a pair", atom);
+            }
+            var key = atom.value[0];
+            if (key.type !== "symbol") {
+                error("obj: entry key is not a symbol", key);
+            }
         }
     }
 
@@ -237,23 +249,31 @@ define(["util"], function (util) {
         }
     }
     
-    function checkApply(atoms, expr) {
-        if (atoms[0].type === "symbol" && atoms[0].value.charAt(0) === ".") {
-            if (atoms.length === 1) {
-                error("invalid property reference, no object specified", expr);
-            }
-            if (atoms.length > 2) {
-                error("invalid property reference, too many arguments", expr);
-            }
+    /**
+     * Checks whether `atoms` are valid arguments for an application of `.`. 
+     * The valid form for `.` is `(. <expr> <expr>)`. The full version of the 
+     * form being checked is provided as `expr` for use in error messages.
+     */
+    function checkProp(atoms, expr) {
+        if (atoms.length === 0) {
+            error(".: empty expression", expr);
+        }
+        if (atoms.length === 1) {
+            error(".: no property value specified", expr);
+        }
+        if (atoms.length > 2) {
+            error(".: too many arguments", expr);
         }
     }
 
     return {
-        checkApply: checkApply,
+        isProp: isProp,
         checks: {
+            ".": checkProp,
             "import": checkImport,
             "var": checkVar,
             "fn": checkFunction,
+            "obj": checkObject,
             "set!": checkAssign,
             "if": checkIf,
             "quote": checkQuoteExpr("quote"),
