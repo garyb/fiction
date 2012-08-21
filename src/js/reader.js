@@ -12,15 +12,6 @@ define(["util"], function (util) {
     
     var createForm = util.createForm;
 
-    var skip = { toString: function () { return "{skip}"; } };
-
-    function newline(state) {
-        state.i++;
-        state.lineNum++;
-        state.charNum = 1;
-        return read(state);
-    }
-
     function readList(state) {
         var origState = state.clone();
         var openChr = state.input.charAt(state.i);
@@ -34,14 +25,15 @@ define(["util"], function (util) {
         state.i++;
         var values = [];
         var closed = false;
+        consumeWhitespace(state);
         while (state.i < state.l) {
             if (state.input.charAt(state.i) === closeChr) {
                 state.i++;
                 closed = true;
                 break;
             } else {
-                var s = read(state);
-                values.push(s);
+                values.push(read(state));
+                consumeWhitespace(state);
             }
         }
         if (!closed) {
@@ -109,12 +101,13 @@ define(["util"], function (util) {
     function readComment(state) {
         state.i++;
         while (state.i < state.l) {
-            var chr = state.input.charAt(state.i++);
+            var chr = state.input.charAt(state.i);
             if (chr === "\n") {
                 break;
             }
+            state.i++;
         }
-        return skip;
+        return read(state);
     }
 
     function readQuote(type) {
@@ -142,23 +135,27 @@ define(["util"], function (util) {
         return createForm("list", [createForm("symbol", type), x]);
     }
     
-    var delimiters = {
-        "(" : true,
-        "[" : true,
-        "{" : true,
-        ")" : true,
-        "]" : true,
-        "}" : true,
-        '"' : true,
-        "'" : true,
-        "`" : true,
-        "," : true,
-        ";" : true,
-        " " : true,
-        "\t": true,
-        "\r": true,
-        "\n": true
-    };
+    var whitespace = util.makeMap([
+        " ", "\t", "\r", "\n"
+    ]);
+    
+    function consumeWhitespace(state) {
+        while (state.i < state.l) {
+            var chr = state.input.charAt(state.i);
+            if (chr === "\n") {
+                state.lineNum++;
+                state.charNum = 1;
+            } else if (!whitespace.hasOwnProperty(chr)) {
+                break;
+            }
+            state.i++;
+        }
+    }
+    
+    var delimiters = util.copyProps(whitespace, util.makeMap([
+        "(", "[", "{", ")", "]", "}", 
+        '"', "'", "`", ",", ";"
+    ]));
 
     function readToDelim(state) {
         var chunk = "";
@@ -198,25 +195,16 @@ define(["util"], function (util) {
         "8" : readNum,
         "9" : readNum,
         '"' : readString,
-        '#' : readSpecial,
-        " " : skip,
-        "\t": skip,
-        "\n": newline,
-        "\r": skip
+        '#' : readSpecial
     };
 
     function read(state) {
-        while (state.i < state.l) {
+        consumeWhitespace(state);
+        if (state.i < state.l) {
             var chr = state.input.charAt(state.i);
             var reader = readers[chr];
-            if (reader === skip) {
-                state.i++;
-                continue;
-            } else if (reader) {
-                var value = reader(state);
-                if (value !== skip) {
-                    return value;
-                }
+            if (reader) {
+                return reader(state);
             } else {
                 return readSymbol(state);
             }
