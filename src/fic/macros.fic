@@ -15,6 +15,28 @@
   (syntax-rules (else)
     ((_ (test-expr then-expr ...) (else else-expr ...)) (if test-expr (do then-expr ...) (do else-expr ...)))
     ((_ (test-expr then-expr ...) exprs ...) (if test-expr (do then-expr ...) (cond exprs ...)))))
+    
+(define-syntax case
+  (syntax-rules (else)
+    ((case (key ...)
+       clauses ...)
+     (let ((atom-key (key ...)))
+       (case atom-key clauses ...)))
+    ((case key
+       (else result1 result2 ...))
+     (do result1 result2 ...))         
+    ((case key
+       ((atom) result1 result2 ...)
+       clause clauses ...)
+     (if (== atom key)
+         (do result1 result2 ...)
+         (case key clause clauses ...)))
+    ((case key
+       ((atoms ...) result1 result2 ...)
+       clause clauses ...)
+     (if (> (.indexOf '(atoms ...) key) (- 1))
+         (do result1 result2 ...)
+         (case key clause clauses ...)))))
 
 (define-syntax and
   (syntax-rules ()
