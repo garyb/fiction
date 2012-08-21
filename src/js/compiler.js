@@ -232,7 +232,7 @@ define(["util", "javascript"], function (util, js) {
     function compileQuasiQuotedValue(arg, env) {
         var result = null;
         if (arg.type === "literal") {
-            result = arg.value;
+            result = compileLiteral(arg);
         } else if (arg.type === "symbol") {
             result = "symbol(\"" + arg.value + "\")";
         } else if (checkForm(arg, "unquote")) {
