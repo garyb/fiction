@@ -32,6 +32,13 @@ define(["util", "javascript"], function (util, js) {
         "\\": "$bslash"
     };
     
+    function makeDefaultJSId(id) {
+        if (js.allSymbols.hasOwnProperty(id)) {
+            return id;
+        }
+        return makeJSId(id);
+    }
+    
     function makeJSId(id) {
         /*jshint regexp: false*/
         if (js.allSymbols.hasOwnProperty(id)) {
@@ -100,7 +107,8 @@ define(["util", "javascript"], function (util, js) {
     }
     
     function compileSymbol(form, env) {
-        return get(env, form.value, form);
+        return env.hasOwnProperty(form.value) ? get(env, form.value, form)
+                                              : makeDefaultJSId(form.value);
     }
     
     // ------------------------------------------------------------------------
@@ -342,6 +350,11 @@ define(["util", "javascript"], function (util, js) {
         if (fnf.type === "symbol" && fnf.value.charAt(0) === ".") {
             var obj = compile(args[0], env);
             return { value: "(" + obj.value + ")" + fnf.value, env: env };
+        }
+        if (fnf.type === "symbol" && js.prefixOps.hasOwnProperty(fnf.value) && args.length === 1) {
+            var x0 = compile(args[0], env);
+            env = x0.env;
+            return { value: fnf.value + "(" + x0.value + ")", env: env };
         }
         if (fnf.type === "symbol" && js.infixOps.hasOwnProperty(fnf.value)) {
             var x = compile(args[0], env);

@@ -171,6 +171,7 @@ define(["util"], function (util) {
     util.copyProps(values, allSymbols);
     util.copyProps(functions, allSymbols);
     util.copyProps(objects, allSymbols);
+    util.copyProps(allOperators, allSymbols);
 
     return {
         keywords: keywords, 
