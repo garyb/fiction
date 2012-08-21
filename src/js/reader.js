@@ -85,11 +85,12 @@ define(["util"], function (util) {
     }
     
     function readBool(state) {
-        var chr = state.input.charAt(state.i);
+        var chr = state.input.charAt(state.i++);
         return createForm("literal", chr === "t");
     }
     
     function readRegex(state) {
+        state.i++;
         var origState = state.clone();
         var chunk = "";
         var escaped = false;
@@ -130,7 +131,6 @@ define(["util"], function (util) {
         var chr = state.input.charAt(state.i);
         var sr = specials[chr];
         if (sr) {
-            state.i++;
             return sr(state);
         } else {
             error("reader: bad syntax '#" + chr + "'", state);
