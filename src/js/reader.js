@@ -84,12 +84,56 @@ define(["util"], function (util) {
         return createForm("literal", chunk);
     }
     
+    function readBool(state) {
+        var chr = state.input.charAt(state.i);
+        return createForm("literal", chr === "t");
+    }
+    
+    function readRegex(state) {
+        var origState = state.clone();
+        var chunk = "";
+        var escaped = false;
+        var input = state.input;
+        while (state.i < state.l) {
+            var chr = input.charAt(state.i);
+            if (chr === '/' && !escaped) {
+                break;
+            }
+            if (escaped) {
+                escaped = false;
+            } else if (chr === "\\") {
+                escaped = true;
+            }
+            chunk += chr;
+            state.i++;
+            state.charNum++;
+        }
+        if (state.i === state.l) {
+            error("Unclosed regular expression")(origState);
+        }
+        state.i++;
+        var options = readToDelim(state);
+        if (!/^[gim]*$/.test(options)) {
+            error("Invalid regular expression options '" + options + "'")(state);
+        }
+        return createForm("literal", new RegExp(chunk.slice(1, chunk.length), options));
+    }
+    
+    var specials = {
+        "t": readBool,
+        "f": readBool,
+        "/": readRegex
+    };
+    
     function readSpecial(state) {
-        var chunk = readToDelim(state);
-        if (chunk === "#t") {
-            return createForm("literal", true);
-        } else if (chunk === "#f") {
-            return createForm("literal", false);
+        state.i++;
+        var chr = state.input.charAt(state.i);
+        var sr = specials[chr];
+        if (sr) {
+            state.i++;
+            return sr(state);
+        } else {
+            error("reader: bad syntax '#" + chr + "'", state);
         }
     }
 

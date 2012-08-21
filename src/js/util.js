@@ -34,8 +34,9 @@ define(function () {
         if (type === "literal") {
             if ((typeof value !== "string") && 
                 (typeof value !== "number") && 
-                (typeof value !== "boolean")) {
-                throw new Error("Literal value should be string, number, or boolean, found: " + value);
+                (typeof value !== "boolean") &&
+                !(value instanceof RegExp)) {
+                throw new Error("Literal value should be string, number, boolean, or regex, found: " + value);
             }
         }
         var form = { type: type, value: value };
