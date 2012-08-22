@@ -351,20 +351,20 @@ define(["util", "javascript"], function (util, js) {
             var obj = compile(args[0], env);
             return { value: "(" + obj.value + ")" + fnf.value, env: env };
         }
-        if (fnf.type === "symbol" && js.prefixOps.hasOwnProperty(fnf.value) && args.length === 1) {
+        var tmp = compile(fnf, env);
+        var fnv = tmp.value;
+        if (fnf.type === "symbol" && js.prefixOps.hasOwnProperty(fnv) && args.length === 1) {
             var x0 = compile(args[0], env);
             env = x0.env;
-            return { value: fnf.value + "(" + x0.value + ")", env: env };
+            return { value: fnv + "(" + x0.value + ")", env: env };
         }
-        if (fnf.type === "symbol" && js.infixOps.hasOwnProperty(fnf.value)) {
+        if (fnf.type === "symbol" && js.infixOps.hasOwnProperty(fnv)) {
             var x = compile(args[0], env);
             env = x.env;
             var y = compile(args[1], env);
             env = y.env;
-            return { value: "(" + x.value + ") " + fnf.value + " (" + y.value + ")", env: env };
+            return { value: "(" + x.value + ") " + fnv + " (" + y.value + ")", env: env };
         }
-        var tmp = compile(fnf, env);
-        var fnv = tmp.value;
         env = tmp.env;
         var argvs = [];
         for (var i = 0, l = args.length; i < l; i++) {
@@ -409,7 +409,11 @@ define(["util", "javascript"], function (util, js) {
     }
     
     function compileScript(forms, env) {
-        env = env || {};
+        env = env || {
+            "not": "!",
+            "eqv?": "==",
+            "eq?": "==="
+        };
         var prefix = "";
         if (anyUsesSymbolQuote(forms)) {
             // TODO: this doesn't make the symbol id safe.
