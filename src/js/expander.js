@@ -58,7 +58,8 @@ define(["util", "syntax"], function (util, syntax) {
         "quasiquote": createForm("symbol", "quasiquote"),
         "unquote": createForm("symbol", "unquote"),
         "unquote-splicing": createForm("symbol", "unquote-splicing"),
-        ".": createForm("symbol", ".")
+        ".": createForm("symbol", "."),
+        "...": createForm("symbol", "...")
     };
     
     function expandImport(atoms, form, env, imp, impChain) {
@@ -246,7 +247,7 @@ define(["util", "syntax"], function (util, syntax) {
                 var rule = rules[i];
                 var values = rule.pattern.run(atoms);
                 if (values) {
-                    result = rule.template.populate(values);
+                    result = rule.template.populate(values)[0];
                     break;
                 }
             }
@@ -273,9 +274,6 @@ define(["util", "syntax"], function (util, syntax) {
             var rule = rules[i];
             var pattern = parsePattern(rule.value[0].value, syntaxId, reserved, true);
             var template = parseTemplate(rule.value[1], pattern.ids, env, reserved);
-            
-            // TODO: check pattern/template semantics to ensure proper usage of ellipsis in template
-            
             result[i] = { pattern: pattern, template: template };
         }
         
@@ -285,10 +283,10 @@ define(["util", "syntax"], function (util, syntax) {
     var patternReader = (function () {
        
         var match = function (val) {
-            if (val.type === "list") {
-                throw new Error("match only works for symbols and literals");
-            }
             return function (state) {
+                if (state.i >= state.input.length) {
+                    return false;
+                }
                 var form = state.input[state.i++];
                 return form.type === val.type && form.value === val.value;
             };
@@ -296,6 +294,9 @@ define(["util", "syntax"], function (util, syntax) {
         
         var matchList = function (val, limit) {
             return function (state) {
+                if (state.i >= state.input.length) {
+                    return false;
+                }
                 while (state.i < (state.input.length - limit)) {
                     var form = state.input[state.i++];
                     if (form.type !== val.type || form.value !== val.value) {
@@ -308,6 +309,9 @@ define(["util", "syntax"], function (util, syntax) {
         
         var bind = function (id) {
             return function (state) {
+                if (state.i >= state.input.length) {
+                    return false;
+                }
                 var form = state.input[state.i++];
                 state.output[id] = form;
                 return true;
@@ -328,6 +332,9 @@ define(["util", "syntax"], function (util, syntax) {
         
         var readList = function (seq) {
             return function (state) {
+                if (state.i >= state.input.length) {
+                    return false;
+                }
                 var form = state.input[state.i++];
                 if (form.type !== "list") {
                     return false;
@@ -376,12 +383,12 @@ define(["util", "syntax"], function (util, syntax) {
         
         var run = function (seq, state) {
             var i = 0, l = seq.length;
-            while (state.i < state.length && i < l) {
+            while (i < l) {
                 if (!seq[i++](state)) {
-                    return;
+                    return false;
                 }
             }
-            return state.i === state.length;
+            return state.i === state.length && i === l;
         };
         
         var makeState = function (atoms) {
@@ -393,7 +400,7 @@ define(["util", "syntax"], function (util, syntax) {
             };
         };
         
-        var create = function (seq) {
+        var create = function (seq, ids) {
             return function (atoms) {
                 var state = makeState(atoms);
                 return run(seq, state) ? state.output : null;
@@ -430,15 +437,13 @@ define(["util", "syntax"], function (util, syntax) {
         return {
             temp: atoms.map(util.printPretty).join(" "),
             ids: ids,
-            run: patternReader.create(seq)
+            run: patternReader.create(seq, ids)
         };
     }
     
     function parsePatternList(atoms, reserved, outerIds) {
         var seq = [];
         var doneEllipsis = false;
-        
-        // TODO: need to increment all id values as needed when sub pattern is ellipsised
         var ids = {};
         
         for (var i = 0, l = atoms.length; i < l; i++) {
@@ -519,87 +524,172 @@ define(["util", "syntax"], function (util, syntax) {
                 doneEllipsis = true;
             }
         }
-        
         return { seq: seq, ids: ids };
     }
     
-    function parseTemplate(template, patIds, env, reserved) {
-        // TODO: warn/info about using reserved ids in template
+    
+    var templateWriters = (function () {
+    
+        function writeForm(form) {
+            return function () {
+                return [form];
+            };
+        }
+    
+        function writeSymbol(template, patIds, env, reserved) {
+            // TODO: warn/info about using reserved ids in template
+            if (patIds.hasOwnProperty(template.value)) {
+                if (patIds[template.value] > 0) {
+                    error("syntax-rules: pattern variable '" + template.value + "' has too few ellipses", template);
+                }
+                return function (tenv) {
+                    return [tenv[template.value]];
+                };
+            }
+            if (env.hasOwnProperty(template.value)) {
+                var ev = get(env, template.value);
+                // TODO: not sure about this - if env has the id as a 
+                //       function, it's because it's bound to a macro in
+                //       the current scope. just making a reference to that
+                //       id isn't right, it should be bound to the macro 
+                //       that currently has that id instead. this is also
+                //       quote-sensitive.
+                if (typeof ev === "function") {
+                    return writeForm(createForm("symbol", template.value));
+                } else {
+                    return writeForm(createForm("symbol", ev));
+                }
+            }
+            return writeForm(createForm("symbol", template.value));
+        }
+        
+        function findIds(template, patIds) {
+            if (template.type === "literal") {
+                return [];
+            }
+            if (template.type === "symbol") {
+                return [template.value];
+            }
+            var atoms = template.value;
+            var ids = [];
+            for (var i = 0, l = atoms.length; i < l; i++) {
+                var atom = atoms[i];
+                if (atom.type === "symbol" && patIds.hasOwnProperty(atom.value)) {
+                    ids.push(atom.value);
+                }
+            }
+            return ids;
+        }
+        
+        function createEllipsisWriter(inner, ids) {
+            return function (tenv) {
+                var length = -1;
+                for (var i = 0, l = ids.length; i < l; i++) {
+                    var val = tenv[ids[i]];
+                    if (length === -1) {
+                        length = val.length;
+                    } else if (val.length !== length) {
+                        // TODO: a decent error message!
+                        error("macro expansion: ellipsis lists differ in length");
+                    }
+                }
+                var result = [];
+                for (var j = 0; j < length; j++) {
+                    var tenv1 = util.copyProps(tenv, {});
+                    for (i = 0; i < l; i++) {
+                        var id = ids[i];
+                        tenv1[id] = tenv1[id][j];
+                    }
+                    result = result.concat(inner(tenv1));
+                }
+                return result;
+            };
+        }
+        
+        function listItemWriter(atom, patIds, env, reserved, numEllipsis) {
+            if (numEllipsis === 0) {
+                return create(atom, patIds, env, reserved);
+            } else {
+                var ids = findIds(atom, patIds);
+                var patIds1 = util.copyProps(patIds, {});
+                for (var j = 0, m = ids.length; j < m; j++) {
+                    if (patIds1[ids[j]] > 0) {
+                        patIds1[ids[j]]--;
+                    } else {
+                        error("syntax-rules: too many ellipses in template", atom)
+                    }
+                }
+                var inner = listItemWriter(atom, patIds1, env, reserved, numEllipsis - 1);
+                return createEllipsisWriter(inner, ids); 
+            }
+        }
+        
+        function writeList(template, patIds, env, reserved) {
+        
+            var atoms = template.value;
+            
+            // Keep () as ()
+            if (atoms.length === 0) {
+                return writeForm(template);
+            }
+            
+            // Expand `(... ...)` to `...`
+            if (atoms[0].type === "symbol" && atoms[0].value === "..." &&
+                atoms[1].type === "symbol" && atoms[1].value === "...") {
+                return writeForm(symbols["..."]);
+            }
+            
+            var writers = [];
+            var usedIds = [];
+            var tmp;
+
+            for (var i = 0, l = atoms.length; i < l; i++) {
+                var atom = atoms[i];
+                var numEllipsis = 0;
+                
+                while (i < atoms.length - 1 && 
+                       atoms[i + 1].type === "symbol" && 
+                       atoms[i + 1].value === "...") {
+                    numEllipsis++;
+                    i++;
+                }
+                
+                writers.push(listItemWriter(atom, patIds, env, reserved, numEllipsis));
+            }
+            
+            return function (tenv) {
+                var result = [];
+                for (var i = 0, l = writers.length; i < l; i++) {
+                    var value = writers[i](tenv);
+                    result = result.concat(value);
+                }
+                return [createForm("list", result)];
+            };
+        }
         
         // TODO: templates need to be quote-aware, so symbols are not rewritten
         //       using env mapping if they are quoted. basically 'a should 
         //       always be 'a and not become 'a25 or whatever.
         
-        var apply = function (template, tenv) {
-            if (template.type === "literal") {
-                return template;
-        
-            } else if (template.type === "symbol") {
-                
-                if (patIds.hasOwnProperty(template.value)) {
-                    return tenv[template.value];
-                } else if (env.hasOwnProperty(template.value)) {
-                    var ev = get(env, template.value);
-                    // TODO: not sure about this - if env has the id as a 
-                    //       function, it's because it's bound to a macro in
-                    //       the current scope. just making a reference to that
-                    //       id isn't right, it should be bound to the macro 
-                    //       that currently has that id instead. this is also
-                    //       quote-sensitive.
-                    if (typeof ev === "function") {
-                        return createForm("symbol", template.value);
-                    } else {
-                        return createForm("symbol", ev);
-                    }
-                } else {
-                    return createForm("symbol", template.value);
-                }
-            
-            } else if (template.type === "list") {
-            
-                var atoms = template.value;
-                var values = [];
-                
-                if (atoms.length === 0) {
-                    return createForm("list", []);
-                }
-                
-                // Replace `(... ...)` with `...`
-                if (atoms[0].type === "symbol" && atoms[0].value === "..." &&
-                    atoms[1].type === "symbol" && atoms[1].value === "...") {
-                    return createForm("symbol", "...");
-                }
-
-                for (var i = 0, l = atoms.length; i < l; i++) {
-                    var atom = atoms[i];
-                    var value = [apply(atom, tenv)];
-                    
-                    while (i < atoms.length - 1 && 
-                              atoms[i + 1].type === "symbol" && 
-                              atoms[i + 1].value === "...") {
-                        value = util.flatten(value);
-                        i++;
-                    }
-                    
-                    if (value.length !== 1 || value[0] !== undefined) {
-                        values = values.concat(value);
-                    }
-                }
-                
-                
-                
-                return createForm("list", values);
+        function create(atom, patIds, env, reserved) {
+            if (atom.type === "symbol") {
+                return writeSymbol(atom, patIds, env, reserved);
             }
-        };
-        
+            if (atom.type === "list") {
+                return writeList(atom, patIds, env, reserved);
+            }
+            return writeForm(atom);
+        }
+    
         return {
-            populate: function (tenv) {
-                var result = apply(template, tenv);
-                if (Array.isArray(result)) {
-                    error("Something went wrong, template expanded into multiple forms", template);
-                }
-                return result;
-            }
+            create: create
+        };
+    
+    }());
+    
+    function parseTemplate(template, patIds, env, reserved) {
+        return {
+            populate: templateWriters.create(template, patIds, env, reserved)
         };
     }
     
