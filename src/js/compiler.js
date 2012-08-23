@@ -101,7 +101,7 @@ define(["util", "javascript"], function (util, js) {
     function compileLiteral(form) {
         if (typeof form.value === "string") {
             // TODO: cover line breaks etc. too
-            return '"' + form.value.replace(/"/, '\\"') + '"';
+            return '"' + form.value + '"';
         }
         return form.value;
     }
@@ -372,7 +372,7 @@ define(["util", "javascript"], function (util, js) {
             env = tmp.env;
             argvs[i] = tmp.value;
         }
-        return { value: fnv + "(" + argvs.join(", ") + ")", env: env };
+        return { value: "(" + fnv + ")" + "(" + argvs.join(", ") + ")", env: env };
     }
     
     function compile(form, env) {

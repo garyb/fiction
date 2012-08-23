@@ -54,6 +54,8 @@ define(["util"], function (util) {
             error("Invalid characters in number literal '" + chunk + "'")(state);
         }
     }
+    
+    var escapeable = util.makeMap(["b", "t", "n", "v", "f", "r", '"', "'", "\\"]);
 
     function readString(state) {
         // TODO: escaping probably needs more work
@@ -67,11 +69,17 @@ define(["util"], function (util) {
             if (chr === '"' && !escaped) {
                 break;
             }
-            if (escaped || chr !== "\\") {
-                chunk += chr;
-                escaped = false;
+            if (escaped) {
+                if (escapeable.hasOwnProperty(chr)) {
+                    chunk += "\\" + chr;
+                    escaped = false;
+                } else {
+                    error("Invalid escape sequence '\\" + chr + "'")(state);
+                }
             } else if (chr === "\\") {
                 escaped = true;
+            } else {
+                chunk += chr;
             }
             state.i++;
             state.charNum++;
