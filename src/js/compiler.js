@@ -412,7 +412,9 @@ define(["util", "javascript"], function (util, js) {
         env = env || {
             "not": "!",
             "eqv?": "==",
-            "eq?": "==="
+            "eq?": "===",
+            "not-eq?": "!==",
+            "not-eqv?": "!="
         };
         var prefix = "";
         if (anyUsesSymbolQuote(forms)) {

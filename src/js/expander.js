@@ -9,7 +9,7 @@ define(["util", "syntax"], function (util, syntax) {
     
     function error(msg, form) {
         // TODO: add line/char details to forms for better errors
-        throw new Error(msg + " @ " + util.printRawForm(form));
+        throw new Error(msg + " @ " + util.printPretty(form));
     }
     
     // ------------------------------------------------------------------------
@@ -232,9 +232,7 @@ define(["util", "syntax"], function (util, syntax) {
         return { value: [form], env: env };
     }
     
-    function invalidUnquoteUse(atoms, form) {
-        error(form.value[0] + ": not in quasiquote", form);
-    }
+
     
     function expandDefineSyntax(atoms, form, env) {
         syntax.checks["define-syntax"](atoms, form);
@@ -616,7 +614,7 @@ define(["util", "syntax"], function (util, syntax) {
                     if (patIds1[ids[j]] > 0) {
                         patIds1[ids[j]]--;
                     } else {
-                        error("syntax-rules: too many ellipses in template", atom)
+                        error("syntax-rules: too many ellipses in template", atom);
                     }
                 }
                 var inner = listItemWriter(atom, patIds1, env, reserved, numEllipsis - 1);
@@ -693,8 +691,26 @@ define(["util", "syntax"], function (util, syntax) {
         };
     }
     
+    // ------------------------------------------------------------------------
+    //  Errors
+    // ------------------------------------------------------------------------
+    
+    function invalidUnquoteUse(atoms, form) {
+        error(form.value[0] + ": not in quasiquote", form);
+    }
+    
     function invalidSyntaxRulesUse(atoms, form) {
         error("syntax-rules: not in define-syntax", form);
+    }
+    
+    function jsOpError(suggestion) {
+        return function (atoms, form) {
+            error(form.value[0].value + ": undefined operator, try '" + suggestion + "' instead", form);
+        };
+    }
+    
+    function jsAssignOpError(atoms, form) {
+        error(form.value[0].value + ": undefined operator", form);
     }
     
     // ------------------------------------------------------------------------
@@ -784,7 +800,25 @@ define(["util", "syntax"], function (util, syntax) {
             "unquote": invalidUnquoteUse,
             "unquote-splicing": invalidUnquoteUse,
             "define-syntax": expandDefineSyntax,
-            "syntax-rules": invalidSyntaxRulesUse
+            "syntax-rules": invalidSyntaxRulesUse,
+            "!": jsOpError("not"),
+            "=": jsOpError("set!"),
+            "==": jsOpError("eqv?"),
+            "===": jsOpError("eq?"),
+            "!=": jsOpError("not-eq?"),
+            "!==": jsOpError("not-eqv?"),
+            "<=": jsAssignOpError,
+            ">=": jsAssignOpError,
+            "+=": jsAssignOpError,
+            "-=": jsAssignOpError,
+            "*=": jsAssignOpError,
+            "%=": jsAssignOpError,
+            "<<=": jsAssignOpError,
+            ">>=": jsAssignOpError,
+            ">>>=": jsAssignOpError,
+            "&=": jsAssignOpError,
+            "|=": jsAssignOpError,
+            "^=": jsAssignOpError
         };
         var imports = findAllImports(forms);
         var imported = {};
