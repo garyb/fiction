@@ -566,15 +566,12 @@ define(["util", "syntax"], function (util, syntax) {
                 return [];
             }
             if (template.type === "symbol") {
-                return [template.value];
+                return patIds.hasOwnProperty(template.value) ? [template.value] : [];
             }
             var atoms = template.value;
             var ids = [];
             for (var i = 0, l = atoms.length; i < l; i++) {
-                var atom = atoms[i];
-                if (atom.type === "symbol" && patIds.hasOwnProperty(atom.value)) {
-                    ids.push(atom.value);
-                }
+                ids = ids.concat(findIds(atoms[i], patIds));
             }
             return ids;
         }

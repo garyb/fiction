@@ -1,0 +1,4 @@
+(define-syntax test
+  (syntax-rules ()
+    ((_ group-name test1 test2 ...)
+     (run-tests group-name `(,(def-test test1) ,(def-test test2) ...)))))
