@@ -74,7 +74,8 @@ require(["playground", "reader", "expander", "util"], function (playground, read
                                 "(import \"macros-4\") (let ((a 1) (b 2) (c 3)) `(,a ,b ,c))",
                                 "(import \"macros-5\") (mc (1 2 3) (a b c))",
                                 "(import \"macros-6\") (<++ 1 2 3 4)",
-                                "(import \"macros-6\") (++> 1 2 3 4)"]]);    
+                                "(import \"macros-6\") (++> 1 2 3 4)",
+                                "(import \"macros-7\") (test \"foobar\" (eq? \"1\" 1) (eq? \"2\" 2) (eq? \"3\" 3))"]]);    
                                 
         things.push(["properties", ["(.sin Math)", 
                                     ".sin", 
