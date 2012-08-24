@@ -58,7 +58,6 @@ define(["util"], function (util) {
     var escapeable = util.makeMap(["b", "t", "n", "v", "f", "r", '"', "'", "\\"]);
 
     function readString(state) {
-        // TODO: escaping probably needs more work
         state.i++;
         var origState = state.clone();
         var chunk = "";
