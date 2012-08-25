@@ -183,6 +183,14 @@ define(["util", "javascript"], function (util, js) {
             result.push(lastExpr);
             // now make the last expression a reference to that var
             lastExpr = { type: "list", value: [{ type: "symbol", value: "#return" }, lastExpr.value[1]] };
+        } else if (checkForm(lastExpr, "error")) {
+            // do nothing, returning a throw is nonsense
+            lastExpr = lastExpr;
+        } else if (checkForm(lastExpr, "try")) {
+            var sym = lastExpr.value[0];
+            var cc = lastExpr.value[2];
+            var catchClause = util.createForm("list", cc.value.slice(0, 2).concat(insertReturn(cc.value.slice(2))));
+            lastExpr = util.createForm("list", [sym, insertReturn([lastExpr.value[1]])[0], catchClause]);
         } else {
             lastExpr = { type: "list", value: [{ type: "symbol", value: "#return" }, lastExpr] };
         }
@@ -285,6 +293,25 @@ define(["util", "javascript"], function (util, js) {
         };
     }
     
+    function compileError(args, env, form) {
+        var values = [];
+        for (var i = 0, l = args.length; i < l; i++) {
+            var tmp = compile(args[i], env);
+            values[i] = tmp.value;
+            env = tmp.env;
+        }
+        return { value: "throw new Error(" + values.join(" + ") + ")", env: env };
+    }
+    
+    function compileTry(args, env, form) {
+        var tmp = compile(args[0], env);
+        var tryExpr = tmp.value;
+        env = tmp.env;
+        var ename = compile(args[1].value[1], env).value;
+        var catchExpr = compile(args[1].value[2], env).value;
+        return { value: "try {\n\t" + tryExpr + "\n\t} catch (" + ename + ") {\n\t" + catchExpr + "\n\t}", env: env };
+    }
+    
     // ------------------------------------------------------------------------
     //  Quoted symbol usage detection
     // ------------------------------------------------------------------------
@@ -343,7 +370,9 @@ define(["util", "javascript"], function (util, js) {
         "if": compileIf,
         "quote": compileQuote,
         "quasiquote": compileQuasiQuote,
-        "#return": compileStatement("return")
+        "#return": compileStatement("return"),
+        "error": compileError,
+        "try": compileTry
     };
     
     function addParen(value) {
