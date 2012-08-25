@@ -451,13 +451,13 @@ define(["util", "javascript"], function (util, js) {
     }
     
     function compileScript(forms, env) {
-        env = env || {
+        env = util.copyProps(env || {}, {
             "not": "!",
             "eqv?": "==",
             "eq?": "===",
             "not-eq?": "!==",
             "not-eqv?": "!="
-        };
+        });
         var prefix = "";
         if (anyUsesSymbolQuote(forms)) {
             // TODO: this doesn't make the symbol id safe.
