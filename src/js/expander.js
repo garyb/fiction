@@ -119,7 +119,9 @@ define(["util", "syntax"], function (util, syntax) {
         var tmp = expandProp(prop.value.slice(1), prop, env, imp, impChain);
         var result = tmp.value;
         if (form.value.length > 2) {
-            result = createForm("list", [result].concat(form.value.slice(2)));
+            tmp = expandAll(form.value.slice(2), env, imp, impChain);
+            var all = tmp.value;
+            result = createForm("list", [result].concat(all));
         }
         return { value: result, env: env };
     }
