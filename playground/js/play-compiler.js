@@ -77,7 +77,7 @@ require(["playground", "reader", "expander", "compiler"], function (playground, 
         
         compiles.push([".access", ["((.sin Math) 26)", "(set! (.foo window) 100) (.foo window)"]]);
         
-        compiles.push(["operators", ["(var a 0) (++ a)", "(== 10 20)", "(! #f)", "(~ 36)", "(<= 10 20)"]]);
+        compiles.push(["operators", ["(var a 0) (++ a)", "(eq? 10 20)", "(not #f)", "(~ 36)", "(<= 10 20)"]]);
         
         compiles.push(["eh", ["(import \"macros-2\") (var id 0) (fn () (++ id))",
                               "(import \"macros-2\") (var genID (do (var id 0) (fn () (++ id)))) `(,(genID) ,(genID))"]]);
@@ -90,7 +90,11 @@ require(["playground", "reader", "expander", "compiler"], function (playground, 
                                       
         compiles.push(["objects", ["(obj)", 
                                    "(obj (a 1) (b 2))",
-                                   "(obj (a (+ 1 2)))"]]);
+                                   "(obj (a (+ 1 2)))"]]);   
+                                   
+        compiles.push(["errors", ["(try (error \"The error is: \" 42) (catch err (.log console err)))"]]);
+        
+        compiles.push(["return insertion into try/catch", ["((fn () (try (do-something) (catch e (+ \"do-something failed: \" e)))))"]]);
         
         var runCompiles = function () {
             if (compiles.length > 0) {

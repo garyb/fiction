@@ -309,7 +309,7 @@ define(["util", "javascript"], function (util, js) {
         env = tmp.env;
         var ename = compile(args[1].value[1], env).value;
         var catchExpr = compile(args[1].value[2], env).value;
-        return { value: "try {\n\t" + tryExpr + "\n\t} catch (" + ename + ") {\n\t" + catchExpr + "\n\t}", env: env };
+        return { value: "try {\n\t" + tryExpr + "\n} catch (" + ename + ") {\n\t" + catchExpr + "\n}", env: env };
     }
     
     // ------------------------------------------------------------------------
