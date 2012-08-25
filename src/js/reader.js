@@ -55,7 +55,7 @@ define(["util"], function (util) {
         }
     }
     
-    var escapeable = util.makeMap(["b", "t", "n", "v", "f", "r", '"', "'", "\\"]);
+    var escapeable = util.makeMap(["b", "t", "n", "v", "f", "r", "u", '"', "'", "\\"]);
 
     function readString(state) {
         state.i++;
