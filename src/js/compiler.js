@@ -135,14 +135,14 @@ define(["util", "javascript"], function (util, js) {
                 argsEnv = tmp.env;
             }
             tmp = compileAll(insertReturn(body), argsEnv);
-            result = "(function (" + argNames.join(", ") + ") {\n\t" + tmp.value.replace(/\n/g, "\n\t") + "\n})";
+            result = "function (" + argNames.join(", ") + ") {\n\t" + tmp.value.replace(/\n/g, "\n\t") + "\n}";
         } else if (args[0].type === "symbol") {
             tmp = put(env, args[0].value);
             var restId = tmp.id;
             var restEnv = tmp.env;
             var assn = "var " + restId + " = Array.prototype.slice.call(arguments);";
             tmp = compileAll(insertReturn(body), restEnv);
-            result = "(function () {\n\t" + assn + "\n\t" + tmp.value.replace(/\n/g, "\n\t") + "\n})";
+            result = "function () {\n\t" + assn + "\n\t" + tmp.value.replace(/\n/g, "\n\t") + "\n}";
         }
         return { value: result, env: env };
     }
@@ -346,24 +346,37 @@ define(["util", "javascript"], function (util, js) {
         "#return": compileStatement("return")
     };
     
+    function addParen(value) {
+        if (typeof value !== "string" ||
+            value.indexOf(" ") === -1 ||
+            value.charAt(0) === "\"" ||
+            value.charAt(0) === "[" ||
+            value.charAt(0) === "{" ||
+            value.charAt(0) === "(" ||
+            value.charAt(value.length - 1) === ")") {
+            return value;
+        }
+        return "(" + value + ")";
+    }
+    
     function compileApply(fnf, args, env) {
         if (fnf.type === "symbol" && fnf.value.charAt(0) === ".") {
             var obj = compile(args[0], env);
-            return { value: "(" + obj.value + ")" + fnf.value, env: env };
+            return { value: addParen(obj.value) + fnf.value, env: env };
         }
         var tmp = compile(fnf, env);
         var fnv = tmp.value;
         if (fnf.type === "symbol" && js.prefixOps.hasOwnProperty(fnv) && args.length === 1) {
             var x0 = compile(args[0], env);
             env = x0.env;
-            return { value: fnv + "(" + x0.value + ")", env: env };
+            return { value: fnv + addParen(x0.value), env: env };
         }
         if (fnf.type === "symbol" && js.infixOps.hasOwnProperty(fnv)) {
             var x = compile(args[0], env);
             env = x.env;
             var y = compile(args[1], env);
             env = y.env;
-            return { value: "(" + x.value + ") " + fnv + " (" + y.value + ")", env: env };
+            return { value: addParen(x.value) + " " + fnv + " " + addParen(y.value), env: env };
         }
         env = tmp.env;
         var argvs = [];
@@ -372,7 +385,7 @@ define(["util", "javascript"], function (util, js) {
             env = tmp.env;
             argvs[i] = tmp.value;
         }
-        return { value: "(" + fnv + ")" + "(" + argvs.join(", ") + ")", env: env };
+        return { value: addParen(fnv) + "(" + argvs.join(", ") + ")", env: env };
     }
     
     function compile(form, env) {
@@ -423,7 +436,7 @@ define(["util", "javascript"], function (util, js) {
             if (tmp.id !== "symbol") {
                 throw new Error("Don't know how to deal with the case where 'symbol' was already reserved in the environment");
             }
-            prefix = "var symbol = (function () { var table = {}; return function (id) { return table.hasOwnProperty(id) ? table[id] : table[id] = { toString: function () { return id; } }; }; }());\n";
+            prefix = "var symbol = (function () { var table = {}; return function (id) { return table.hasOwnProperty(id) ? table[id] : table[id] = { isSymbol: true, toString: function () { return id; } }; }; }());\n";
             env = tmp.env;
         }
         return prefix + compileAll(forms, env).value;
