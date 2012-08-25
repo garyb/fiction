@@ -135,14 +135,14 @@ define(["util", "javascript"], function (util, js) {
                 argsEnv = tmp.env;
             }
             tmp = compileAll(insertReturn(body), argsEnv);
-            result = "function (" + argNames.join(", ") + ") {\n\t" + tmp.value.replace(/\n/g, "\n\t") + "\n}";
+            result = "(function (" + argNames.join(", ") + ") {\n\t" + tmp.value.replace(/\n/g, "\n\t") + "\n})";
         } else if (args[0].type === "symbol") {
             tmp = put(env, args[0].value);
             var restId = tmp.id;
             var restEnv = tmp.env;
             var assn = "var " + restId + " = Array.prototype.slice.call(arguments);";
             tmp = compileAll(insertReturn(body), restEnv);
-            result = "function () {\n\t" + assn + "\n\t" + tmp.value.replace(/\n/g, "\n\t") + "\n}";
+            result = "(function () {\n\t" + assn + "\n\t" + tmp.value.replace(/\n/g, "\n\t") + "\n})";
         }
         return { value: result, env: env };
     }
