@@ -87,6 +87,8 @@ require(["playground", "reader", "expander", "util"], function (playground, read
         things.push(["objects", ["(obj)", 
                                  "(obj (a 1) (b 2))",
                                  "(obj (a (+ 1 2)))"]]);
+                                 
+         things.push(["short form property expansion", ["(.push things (fn (x) (.log console x)))"]]);
         
         var runThings = function () {
             if (things.length > 0) {
