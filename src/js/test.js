@@ -11,6 +11,8 @@
         baseUrl: path.resolve(path.dirname(process.argv[2]))
     });
     
-    requirejs([process.argv[2]]);
+    requirejs([process.argv[2]], function(runner) {
+        runner();
+    });
     
 }());
