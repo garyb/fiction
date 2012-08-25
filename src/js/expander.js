@@ -804,8 +804,6 @@ define(["util", "syntax"], function (util, syntax) {
             "===": jsOpError("eq?"),
             "!=": jsOpError("not-eq?"),
             "!==": jsOpError("not-eqv?"),
-            "<=": jsAssignOpError,
-            ">=": jsAssignOpError,
             "+=": jsAssignOpError,
             "-=": jsAssignOpError,
             "*=": jsAssignOpError,
