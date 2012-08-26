@@ -217,7 +217,7 @@ define(["util", "javascript"], function (util, js) {
         var then = tmp.value;
         tmp = compile(args[2], tmp.env);
         var elss = tmp.value;
-        return { value: test + " ? " + then + " : " + elss, env: tmp.env };
+        return { value: "(" + test + " ? " + then + " : " + elss + ")", env: tmp.env };
     }
     
     function compileQuote(args, env) {
@@ -309,7 +309,7 @@ define(["util", "javascript"], function (util, js) {
         env = tmp.env;
         var ename = compile(args[1].value[1], env).value;
         var catchExpr = compile(args[1].value[2], env).value;
-        return { value: "try {\n\t" + tryExpr + "\n} catch (" + ename + ") {\n\t" + catchExpr + "\n}", env: env };
+        return { value: "try {\n\t" + tryExpr.replace(/\n/g, "\n\t") + ";\n} catch (" + ename + ") {\n\t" + catchExpr.replace(/\n/g, "\n\t") + ";\n}", env: env };
     }
     
     // ------------------------------------------------------------------------
