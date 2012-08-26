@@ -230,13 +230,14 @@
     (let ([state (obj (input input)
                       (i 0)
                       (l (.length input))
-            (charNum 1)
+                      (charNum 1)
                       (lineNum 1))])
       (let loop0 ([result '()]
                   [value (read state)])
         (case value
               [end result]
-              [else (loop0 (.concat result value) (read state))])))))
+              [else (.push result value)
+                    (loop0 result (read state))])))))
               
   (var read-main (fn (input)
     (try (let ([result (read-all input)])
