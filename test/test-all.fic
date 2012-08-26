@@ -1,4 +1,4 @@
-(define '("reader" "util") (fn (reader util)
+(define '("reader" "expander" "util") (fn (reader expander util)
 
   (import "test")
 
@@ -12,6 +12,13 @@
   (var read (fn (input check)
     (check (.read reader input))))
     
-  (import "test-reader")
+  (var expand (fn (input check)
+    (let ([read-result (.read reader input)])
+      (if (equal? (. read-result 0) 'failure)
+          (check `(reader-failure ,read-result))
+          (.expand expander (. read-result 1) (fn (expand-result)
+            (check expand-result)))))))
+    
+  (import "test-reader" "test-expander")
 
   run-tests))

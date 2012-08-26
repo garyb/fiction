@@ -1,0 +1,2 @@
+(when "expanding to identity" using expand
+  ("'a" should return '((list ((symbol "quote") (symbol "a"))))))

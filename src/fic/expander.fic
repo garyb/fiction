@@ -1,0 +1,21 @@
+(import "lang")
+(import "compiler-macros")
+
+(define '("util") (fn (util)
+
+  (var expand-error (fn msg
+    (fn (state)
+      (error (.join (.concat msg `(" (line " ,(.lineNum state) ", char " ,(.charNum state) ")")) "")))))
+   
+  ;----------------------------------------------------------------------------
+  ; Main
+  ;----------------------------------------------------------------------------
+              
+  (var expand-main (fn (input k)
+    (k `(success ,input))))
+
+  ;----------------------------------------------------------------------------
+  ; Exports
+  ;----------------------------------------------------------------------------
+
+  (obj (expand expand-main))))
