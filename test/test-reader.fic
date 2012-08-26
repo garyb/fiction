@@ -68,10 +68,7 @@
     ("[a 1]"           should return '((list ((symbol "a") (literal 1)))))
     ("{a 1}"           should return '((list ((symbol "a") (literal 1)))))
     ("(a (b (c nil)))" should return '((list ((symbol "a") (list ((symbol "b") (list ((symbol "c") (symbol "nil")))))))))
-    ("(a\nb\nc)"       should return '((list ((symbol "a") (symbol "b") (symbol "c")))))
-    ("(;a\nb\nc)"      should return '((list ((symbol "b") (symbol "c")))))
-    ("(a\n;b\nc)"      should return '((list ((symbol "a") (symbol "c")))))
-    ("(a\nb\n;c\n)"    should return '((list ((symbol "b") (symbol "c"))))))
+    ("(a\nb\nc)"       should return '((list ((symbol "a") (symbol "b") (symbol "c"))))))
 
   (when "reading quote" using read
     ("'a"     should return '((list ((symbol "quote") (symbol "a")))))
@@ -114,7 +111,10 @@
     (",@`a"    should return '((list ((symbol "unquote-splicing") (list ((symbol "quasiquote") (symbol "a"))))))))
 
   (when "reading comments" using read
-    ("; hi" should return '()))
+    ("; hi" should return '((comment " hi")))
+    ("(;a\nb\nc)"      should return '((list ((comment "a") (symbol "b") (symbol "c")))))
+    ("(a\n;b\nc)"      should return '((list ((symbol "a") (comment "b") (symbol "c")))))
+    ("(a\nb\n;c\n)"    should return '((list ((symbol "a") (symbol "b") (comment "c"))))))
 
   (when "reading toplevel" using read
     ("a b c" should return '((symbol "a") (symbol "b") (symbol "c"))))

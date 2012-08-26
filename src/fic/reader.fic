@@ -123,13 +123,13 @@
             [else `(list ((symbol ,type) ,datum))]))))
 
   (var read-comment (fn (state)
-    (let loop3 ([char (peek-char state)])
+    (let loop3 ([chunk ""]
+                [char (peek-char state)])
       (case char
-            [end 'end]
-            ["\n" (read-char state)
-                  (read state)]
+            [("\n" end) (read-char state)
+                        `(comment ,(.substring chunk 1))]
             [else (read-char state)
-                  (loop3 (peek-char state))]))))
+                  (loop3 (+ chunk char) (peek-char state))]))))
 
   (var read-string (fn (state)
     (let ([orig-state (clone state)])
