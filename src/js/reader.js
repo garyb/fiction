@@ -124,7 +124,7 @@ define(["util"], function (util) {
         if (!/^[gim]*$/.test(options)) {
             error("Invalid regular expression options '" + options + "'")(state);
         }
-        return createForm("literal", new RegExp(chunk.slice(1, chunk.length), options));
+        return createForm("literal", new RegExp(chunk, options));
     }
     
     var specials = {
