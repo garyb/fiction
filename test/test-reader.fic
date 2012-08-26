@@ -56,5 +56,64 @@
     ("#/[a-z]/gim" should return '(literal #/[a-z]/gim))
     ("#/\\b\\B\\cX\\d\\D\\f\\n\\r\\s\\S\\t\\v\\w\\W\\1\\2\\3\\4\\5\\6\\7\\8\\9/" should return '(literal #/\b\B\cX\d\D\f\n\r\s\S\t\v\w\W\1\2\3\4\5\6\7\8\9/))
     ("#/[a-z]/s"   should fail   "Invalid regular expression options 's' (line 1, char 1)"))
+    
+  (when "reading lists" using read
+    ("()" should return '(list ()))
+    ("[]" should return '(list ()))
+    ("{}" should return '(list ()))
+    ("(a)" should return '(list ((symbol a))))
+    ("[a]" should return '(list ((symbol a))))
+    ("{a}" should return '(list ((symbol a))))
+    ("(a 1)" should return '(list ((symbol a) (literal 1))))
+    ("[a 1]" should return '(list ((symbol a) (literal 1))))
+    ("{a 1}" should return '(list ((symbol a) (literal 1))))
+    ("(a (b (c nil)))" should return '(list ((symbol "a") (list ((symbol "b") (list ((symbol "c") (symbol "nil"))))))))
+    ("(a\nb\nc)" should return '(list ((symbol "a") (symbol "b") (symbol "c"))))
+    ("(;a\nb\nc)" should return '(list ((symbol "b") (symbol "c"))))
+    ("(a\n;b\nc)" should return '(list ((symbol "a") (symbol "c"))))
+    ("(a\nb\n;c\n)" should return '(list ((symbol "b") (symbol "c")))))  
+    
+  (when "reading quote" using read
+    ("'a" should return '(list ((symbol "quote") (symbol "a"))))
+    ("'5" should return '(list ((symbol "quote") (literal 5))))
+    ("'()" should return '(list ((symbol "quote") (list ()))))
+    ("'(a)" should return '(list ((symbol "quote") (list ((symbol "a"))))))
+    ("'(a 5)" should return '(list ((symbol "quote") (list ((symbol "a") (literal 5))))))
+    ("''a" should return '(list ((symbol "quote") (list ((symbol "quote") (symbol "a"))))))
+    ("'('a)" should return '(list ((symbol "quote") (list ((list ((symbol "quote") (symbol "a"))))))))
+    ("'`a" should return '(list ((symbol "quote") (list ((symbol "quasiquote") (symbol "a")))))))    
+    
+  (when "reading quasiquote" using read
+    ("`a" should return '(list ((symbol "quasiquote") (symbol "a"))))
+    ("`5" should return '(list ((symbol "quasiquote") (literal 5))))
+    ("`()" should return '(list ((symbol "quasiquote") (list ()))))
+    ("`(a)" should return '(list ((symbol "quasiquote") (list ((symbol "a"))))))
+    ("`(a 5)" should return '(list ((symbol "quasiquote") (list ((symbol "a") (literal 5))))))
+    ("`'a" should return '(list ((symbol "quasiquote") (list ((symbol "quote") (symbol "a"))))))
+    ("`('a)" should return '(list ((symbol "quasiquote") (list ((list ((symbol "quote") (symbol "a"))))))))
+    ("``a" should return '(list ((symbol "quasiquote") (list ((symbol "quasiquote") (symbol "a")))))))
+  
+  (when "reading unquote" using read
+    (",a" should return '(list ((symbol "unquote") (symbol "a"))))
+    (",5" should return '(list ((symbol "unquote") (literal 5))))
+    (",()" should return '(list ((symbol "unquote") (list ()))))
+    (",(a)" should return '(list ((symbol "unquote") (list ((symbol "a"))))))
+    (",(a 5)" should return '(list ((symbol "unquote") (list ((symbol "a") (literal 5))))))
+    (",'a" should return '(list ((symbol "unquote") (list ((symbol "quote") (symbol "a"))))))
+    (",('a)" should return '(list ((symbol "unquote") (list ((list ((symbol "quote") (symbol "a"))))))))
+    (",`a" should return '(list ((symbol "unquote") (list ((symbol "quasiquote") (symbol "a")))))))  
+  
+  (when "reading unquote-splicing" using read
+    (",@a" should return '(list ((symbol "unquote-splicing") (symbol "a"))))
+    (",@5" should return '(list ((symbol "unquote-splicing") (literal 5))))
+    (",@()" should return '(list ((symbol "unquote-splicing") (list ()))))
+    (",@(a)" should return '(list ((symbol "unquote-splicing") (list ((symbol "a"))))))
+    (",@(a 5)" should return '(list ((symbol "unquote-splicing") (list ((symbol "a") (literal 5))))))
+    (",@'a" should return '(list ((symbol "unquote-splicing") (list ((symbol "quote") (symbol "a"))))))
+    (",@('a)" should return '(list ((symbol "unquote-splicing") (list ((list ((symbol "quote") (symbol "a"))))))))
+    (",@`a" should return '(list ((symbol "unquote-splicing") (list ((symbol "quasiquote") (symbol "a")))))))
+    
+  (when "reading comments" using read
+    ("; hi" should return '()))
 
   run-tests))
