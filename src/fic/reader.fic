@@ -147,11 +147,12 @@
             [else ((read-error "Invalid number '" chunk "'") orig-state)]))))
 
   (var read-special (fn (state)
-    (read-char state)
-    (case (peek-char state)
-          [("t" "f") (read-bool state)]
-          ["/" (read-regex state)]
-          [else ((read-error "read-special: unknown value") state)])))
+    (let ([orig-state (clone state)])
+      (read-char state)
+      (case (peek-char state)
+            [("t" "f") (read-bool state orig-state)]
+            ["/" (read-regex state orig-state)]
+            [else ((read-error "read-special: unknown value") state)]))))
 
   (var read-symbol (fn (state)
     `(symbol ,(read-to-delimiter state))))
@@ -160,14 +161,12 @@
   ; Special (#-prefix) readers
   ;----------------------------------------------------------------------------
 
-  (var read-bool (fn (state)
-    
+  (var read-bool (fn (state orig-state)
     (let ([chunk (read-to-delimiter state)])
-      
       (case chunk
             ["t" (read-char state) '(literal #t)]
             ["f" (read-char state) '(literal #f)]
-            [else ((read-error "Invalid boolean value '#" chunk "', expected '#t' or '#f'") state)]))))
+            [else ((read-error "Invalid boolean value '#" chunk "', expected '#t' or '#f'") orig-state)]))))
 
   ;----------------------------------------------------------------------------
   ; Main
