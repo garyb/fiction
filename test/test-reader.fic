@@ -1,0 +1,50 @@
+(define '("reader" "util") (fn (reader util)
+
+  (import "test")
+  
+  (set! show-input (fn (in) (+ (+ "\"" in) "\"")))
+  
+  (set! show-output (fn (out) 
+    (cond [(.isArray Array out) (.join `("(" ,(.join (.map out show-output) " ") ")") "")]
+          [(eq? (typeof out) "string") (+ "\"" (+ out "\""))]
+          [else ((.toString out))])))
+
+  (var read (fn (input check)
+    (check (.read reader input))))
+
+  (when "reading symbols" using read
+    ("a"            should return '(symbol "a"))
+    ("lower"        should return '(symbol "lower"))
+    ("UPPER"        should return '(symbol "UPPER"))
+    ("camelCase"    should return '(symbol "camelCase"))
+    ("CamelCase"    should return '(symbol "CamelCase"))
+    ("j0"           should return '(symbol "j0"))
+    ("hyphen-ated"  should return '(symbol "hyphen-ated"))
+    ("under_scored" should return '(symbol "under_scored"))
+    (".length"      should return '(symbol ".length"))
+    ("úņīčőđē"      should return '(symbol "úņīčőđē"))
+    ("dot.ted"      should fail   "Invalid use of '.' in symbol (line 1, char 4)"))
+    
+  (when "reading booleans" using read
+    ("#t"     should return '(literal #t))
+    ("#f"     should return '(literal #f))
+    ("#true"  should fail   "Invalid boolean value '#true', expected '#t' or '#f' (line 1, char 1)")
+    ("#tasdf" should fail   "Invalid boolean value '#tasdf', expected '#t' or '#f' (line 1, char 1)")
+    ("#false" should fail   "Invalid boolean value '#false', expected '#t' or '#f' (line 1, char 1)")
+    ("#fasdf" should fail   "Invalid boolean value '#fasdf', expected '#t' or '#f' (line 1, char 1)"))
+
+  (when "reading numbers" using read
+    ("1"    should return '(literal 1))
+    ("0.5"  should return '(literal 0.5))
+    ("0xFF" should return '(literal 0xFF))
+    ("1a"   should fail   "Invalid number '1a' (line 1, char 2)")
+    ("0xFG" should fail   "Invalid number '0xFG' (line 1, char 4)"))
+    
+  (when "reading strings" using read
+    ("\"word\""                should return '(literal "word"))
+    ("\"escape \\\"this\\\"\"" should return '(literal "escape \\\"this\\\""))
+    ("\"unterminated"          should fail   "Unterminated string (line 1, char 1)"))
+    
+  ;(when "reading regular expressions" using read)
+
+  run-tests))

@@ -1,0 +1,88 @@
+(import "../src/fic/lang")
+
+; _syntax_: (when <action-string> using <runner-func> <case...>)
+; _case syntax_: (<input> should <behaviour> <output>)
+(define-syntax when
+  (syntax-rules (using)
+    [(_ action using runner test ...)
+     (add-test (+ "When " action) runner `(,(test-case test) ...))]))
+
+; _syntax_: (test-case <input> should <behaviour> <output>)
+(define-syntax test-case
+  (syntax-rules (should)
+    [(_ (input should behaviour output))
+     (make-test-case input behaviour 'behaviour output)]))
+     
+; Makes a test case function.
+(var make-test-case (fn (input behaviour behaviour-sym output)
+  (fn (runner k) 
+    (runner input (behaviour output (fn (result result-value)
+      (++ num-cases)
+      (if result
+          (.log console "-" (show-input input) "should" ((.toString behaviour-sym)) (show-output output) "-- \u001b[32mPASS\u001b[0m")
+          (do (++ num-fails)
+              (.log console "-" (show-input input) "should" ((.toString behaviour-sym)) (show-output output) "-- \u001b[1;31mFAIL\u001b[0m")
+              (.log console "\u001b[31m      result was:" (show-output result-value) "\u001b[0m")))
+      (k)))))))
+      
+(var show-input (fn (in) in))
+(var show-output (fn (out) out))
+     
+; The list of tests to run
+(var tests '())
+(var num-fails 0)
+(var num-cases 0)
+
+; Adds a test to the list
+(var add-test (fn (desc runner test-cases)
+  (.push tests (fn (k)
+    (.log console (+ "\n\u001b[1;33m" (+ desc "\u001b[0m")))
+    (run-loop (.map test-cases (fn (test-case)
+                                 (fn (k) (test-case runner k)))) k)))))
+             
+; CPS function running loop.
+(var run-loop (fn (list k)
+  (if (> (.length list) 0)
+      ((. list 0) (fn () (run-loop (.slice list 1) k)))
+      (k))))
+
+; "should return" behaviour.
+(var return (fn (expected k) (fn (result)
+  (k (and (equal? (. result 0) 'success)
+          (equal? (. result 1) expected))
+     result))))
+
+; "should fail" behaviour.
+; TODO: reinstate message match checking
+(var fail (fn (expected k) (fn (result)
+  (k (and (equal? (. result 0) 'failure)
+          #t)
+     result))))
+     
+(var pluralise (fn (str n) (if (eq? n 1) str (+ str "s"))))
+      
+; Runs all tests.
+(var run-tests (fn () 
+  (run-loop tests (fn ()
+    (if (eq? num-fails 0)
+        (.log console "\nRan" num-cases "tests cases, no failures\n")
+        (.error console "\nRan" num-cases "tests cases,\u001b[1;31m" num-fails (pluralise "failure" num-fails) "\u001b[0m\n"))))))
+
+; TODO: currently symbol equality is hacked in because the function used to 
+; create symbols in each case is different. Need to work out some way to have a
+; universal symbol table across different environments (node & browser...
+; a window.symbol kind of thing might work in the browser although v. hacky).
+(var equal? (fn (x y)
+  (if (eq? x y)
+      #t
+      (if (and (.isArray Array x) 
+               (.isArray Array y) 
+               (eq? (.length x) (.length y)))
+          (let loop ([i 0]
+                     [l (.length x)])
+            (cond
+              [(eq? i l) #t]
+              [(equal? (. x i) (. y i)) (loop (+ i 1) l)]
+              [else #f]))
+          (and (.isSymbol x) (.isSymbol y) (eq? ((.toString x)) ((.toString y))))))))
+      
