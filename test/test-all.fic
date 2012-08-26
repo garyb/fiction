@@ -1,0 +1,17 @@
+(define '("reader" "util") (fn (reader util)
+
+  (import "test")
+
+  (set! show-input (fn (in) (+ (+ "\"" in) "\"")))
+
+  (set! show-output (fn (out)
+    (cond [(.isArray Array out) (.join `("(" ,(.join (.map out show-output) " ") ")") "")]
+          [(eq? (typeof out) "string") (+ "\"" (+ out "\""))]
+          [else ((.toString out))])))
+
+  (var read (fn (input check)
+    (check (.read reader input))))
+    
+  (import "test-reader")
+
+  run-tests))

@@ -5,10 +5,10 @@ copy src\js\*.js bin\*.js /Y
 node src/js/main.js src/fic/reader.fic bin/reader.js
 IF %ERRORLEVEL% NEQ 0 GOTO readerrerror
 
-node src/js/main.js test/test-reader.fic bin/test-reader.js
+node src/js/main.js test/test-all.fic bin/test-all.js
 IF %ERRORLEVEL% NEQ 0 GOTO testerror
 
-node src/js/test.js bin/test-reader.js
+node src/js/test.js bin/test-all.js
 GOTO end
 
 :readerrerror

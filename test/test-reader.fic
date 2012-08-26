@@ -1,122 +1,106 @@
-(define '("reader" "util") (fn (reader util)
+; TODO: quickcheck style testing for things like unicode sequences, number literals, etc.
 
-  (import "test")
+(when "reading symbols" using read
+  ("a"            should return '((symbol "a")))
+  ("lower"        should return '((symbol "lower")))
+  ("UPPER"        should return '((symbol "UPPER")))
+  ("camelCase"    should return '((symbol "camelCase")))
+  ("CamelCase"    should return '((symbol "CamelCase")))
+  ("j0"           should return '((symbol "j0")))
+  ("hyphen-ated"  should return '((symbol "hyphen-ated")))
+  ("under_scored" should return '((symbol "under_scored")))
+  (".length"      should return '((symbol ".length")))
+  ("úņīčőđē"      should return '((symbol "úņīčőđē")))
+  ("dot.ted"      should fail   "Invalid use of '.' in symbol (line 1, char 1)"))
 
-  (set! show-input (fn (in) (+ (+ "\"" in) "\"")))
+(when "reading booleans" using read
+  ("#t"     should return '((literal #t)))
+  ("#f"     should return '((literal #f)))
+  ("#true"  should fail   "Invalid boolean value '#true', expected '#t' or '#f' (line 1, char 1)")
+  ("#tasdf" should fail   "Invalid boolean value '#tasdf', expected '#t' or '#f' (line 1, char 1)")
+  ("#false" should fail   "Invalid boolean value '#false', expected '#t' or '#f' (line 1, char 1)")
+  ("#fasdf" should fail   "Invalid boolean value '#fasdf', expected '#t' or '#f' (line 1, char 1)"))
 
-  (set! show-output (fn (out)
-    (cond [(.isArray Array out) (.join `("(" ,(.join (.map out show-output) " ") ")") "")]
-          [(eq? (typeof out) "string") (+ "\"" (+ out "\""))]
-          [else ((.toString out))])))
-
-  (var read (fn (input check)
-    (check (.read reader input))))
-
-  ; TODO: quickcheck style testing for things like unicode sequences, number literals, etc.
-
-  (when "reading symbols" using read
-    ("a"            should return '((symbol "a")))
-    ("lower"        should return '((symbol "lower")))
-    ("UPPER"        should return '((symbol "UPPER")))
-    ("camelCase"    should return '((symbol "camelCase")))
-    ("CamelCase"    should return '((symbol "CamelCase")))
-    ("j0"           should return '((symbol "j0")))
-    ("hyphen-ated"  should return '((symbol "hyphen-ated")))
-    ("under_scored" should return '((symbol "under_scored")))
-    (".length"      should return '((symbol ".length")))
-    ("úņīčőđē"      should return '((symbol "úņīčőđē")))
-    ("dot.ted"      should fail   "Invalid use of '.' in symbol (line 1, char 1)"))
-
-  (when "reading booleans" using read
-    ("#t"     should return '((literal #t)))
-    ("#f"     should return '((literal #f)))
-    ("#true"  should fail   "Invalid boolean value '#true', expected '#t' or '#f' (line 1, char 1)")
-    ("#tasdf" should fail   "Invalid boolean value '#tasdf', expected '#t' or '#f' (line 1, char 1)")
-    ("#false" should fail   "Invalid boolean value '#false', expected '#t' or '#f' (line 1, char 1)")
-    ("#fasdf" should fail   "Invalid boolean value '#fasdf', expected '#t' or '#f' (line 1, char 1)"))
-
-  (when "reading numbers" using read
-    ("1"    should return '((literal 1)))
-    ("0.5"  should return '((literal 0.5)))
-    ("0xFF" should return '((literal 0xFF)))
-    ("1a"   should fail   "Invalid number '1a' (line 1, char 1)")
-    ("0xFG" should fail   "Invalid number '0xFG' (line 1, char 1)"))
+(when "reading numbers" using read
+  ("1"    should return '((literal 1)))
+  ("0.5"  should return '((literal 0.5)))
+  ("0xFF" should return '((literal 0xFF)))
+  ("1a"   should fail   "Invalid number '1a' (line 1, char 1)")
+  ("0xFG" should fail   "Invalid number '0xFG' (line 1, char 1)"))
 
 
-  (when "reading strings" using read
-    ("\"word\""                should return '((literal "word")))
-    ("\"escape \\\"this\\\"\"" should return '((literal "escape \\\"this\\\"")))
-    ("\"good: \\u003B\""       should return '((literal "good: \\u003B")))
-    ("\"bad: \\u3B\""          should fail   "Invalid unicode escape sequence '\\u3B' (line 1, char 9)")
-    ("\"bad: \\u000g\""        should fail   "Invalid unicode escape sequence '\\u000' (line 1, char 9)")
-    ("\"unterminated"          should fail   "Unterminated string, expected a closing '\"' (line 1, char 1)"))
+(when "reading strings" using read
+  ("\"word\""                should return '((literal "word")))
+  ("\"escape \\\"this\\\"\"" should return '((literal "escape \\\"this\\\"")))
+  ("\"good: \\u003B\""       should return '((literal "good: \\u003B")))
+  ("\"bad: \\u3B\""          should fail   "Invalid unicode escape sequence '\\u3B' (line 1, char 9)")
+  ("\"bad: \\u000g\""        should fail   "Invalid unicode escape sequence '\\u000' (line 1, char 9)")
+  ("\"unterminated"          should fail   "Unterminated string, expected a closing '\"' (line 1, char 1)"))
 
-  (when "reading regular expressions" using read
-    ("#/[a-z]/"    should return '((literal #/[a-z]/)))
-    ("#/[a-z]/gim" should return '((literal #/[a-z]/gim)))
-    ("#/\\b\\B\\cX\\d\\D\\f\\n\\r\\s\\S\\t\\v\\w\\W\\1\\2\\3\\4\\5\\6\\7\\8\\9/" should return '((literal #/\b\B\cX\d\D\f\n\r\s\S\t\v\w\W\1\2\3\4\5\6\7\8\9/)))
-    ("#/[a-z]/s"   should fail   "Invalid regular expression options 's' (line 1, char 1)"))
+(when "reading regular expressions" using read
+  ("#/[a-z]/"    should return '((literal #/[a-z]/)))
+  ("#/[a-z]/gim" should return '((literal #/[a-z]/gim)))
+  ("#/\\b\\B\\cX\\d\\D\\f\\n\\r\\s\\S\\t\\v\\w\\W\\1\\2\\3\\4\\5\\6\\7\\8\\9/" should return '((literal #/\b\B\cX\d\D\f\n\r\s\S\t\v\w\W\1\2\3\4\5\6\7\8\9/)))
+  ("#/[a-z]/s"   should fail   "Invalid regular expression options 's' (line 1, char 1)"))
 
-  (when "reading lists" using read
-    ("()"              should return '((list ())))
-    ("[]"              should return '((list ())))
-    ("{}"              should return '((list ())))
-    ("(a)"             should return '((list ((symbol "a")))))
-    ("[a]"             should return '((list ((symbol "a")))))
-    ("{a}"             should return '((list ((symbol "a")))))
-    ("(a 1)"           should return '((list ((symbol "a") (literal 1)))))
-    ("[a 1]"           should return '((list ((symbol "a") (literal 1)))))
-    ("{a 1}"           should return '((list ((symbol "a") (literal 1)))))
-    ("(a (b (c nil)))" should return '((list ((symbol "a") (list ((symbol "b") (list ((symbol "c") (symbol "nil")))))))))
-    ("(a\nb\nc)"       should return '((list ((symbol "a") (symbol "b") (symbol "c"))))))
+(when "reading lists" using read
+  ("()"              should return '((list ())))
+  ("[]"              should return '((list ())))
+  ("{}"              should return '((list ())))
+  ("(a)"             should return '((list ((symbol "a")))))
+  ("[a]"             should return '((list ((symbol "a")))))
+  ("{a}"             should return '((list ((symbol "a")))))
+  ("(a 1)"           should return '((list ((symbol "a") (literal 1)))))
+  ("[a 1]"           should return '((list ((symbol "a") (literal 1)))))
+  ("{a 1}"           should return '((list ((symbol "a") (literal 1)))))
+  ("(a (b (c nil)))" should return '((list ((symbol "a") (list ((symbol "b") (list ((symbol "c") (symbol "nil")))))))))
+  ("(a\nb\nc)"       should return '((list ((symbol "a") (symbol "b") (symbol "c"))))))
 
-  (when "reading quote" using read
-    ("'a"     should return '((list ((symbol "quote") (symbol "a")))))
-    ("'5"     should return '((list ((symbol "quote") (literal 5)))))
-    ("'()"    should return '((list ((symbol "quote") (list ())))))
-    ("'(a)"   should return '((list ((symbol "quote") (list ((symbol "a")))))))
-    ("'(a 5)" should return '((list ((symbol "quote") (list ((symbol "a") (literal 5)))))))
-    ("''a"    should return '((list ((symbol "quote") (list ((symbol "quote") (symbol "a")))))))
-    ("'('a)"  should return '((list ((symbol "quote") (list ((list ((symbol "quote") (symbol "a")))))))))
-    ("'`a"    should return '((list ((symbol "quote") (list ((symbol "quasiquote") (symbol "a"))))))))
+(when "reading quote" using read
+  ("'a"     should return '((list ((symbol "quote") (symbol "a")))))
+  ("'5"     should return '((list ((symbol "quote") (literal 5)))))
+  ("'()"    should return '((list ((symbol "quote") (list ())))))
+  ("'(a)"   should return '((list ((symbol "quote") (list ((symbol "a")))))))
+  ("'(a 5)" should return '((list ((symbol "quote") (list ((symbol "a") (literal 5)))))))
+  ("''a"    should return '((list ((symbol "quote") (list ((symbol "quote") (symbol "a")))))))
+  ("'('a)"  should return '((list ((symbol "quote") (list ((list ((symbol "quote") (symbol "a")))))))))
+  ("'`a"    should return '((list ((symbol "quote") (list ((symbol "quasiquote") (symbol "a"))))))))
 
-  (when "reading quasiquote" using read
-    ("`a"     should return '((list ((symbol "quasiquote") (symbol "a")))))
-    ("`5"     should return '((list ((symbol "quasiquote") (literal 5)))))
-    ("`()"    should return '((list ((symbol "quasiquote") (list ())))))
-    ("`(a)"   should return '((list ((symbol "quasiquote") (list ((symbol "a")))))))
-    ("`(a 5)" should return '((list ((symbol "quasiquote") (list ((symbol "a") (literal 5)))))))
-    ("`'a"    should return '((list ((symbol "quasiquote") (list ((symbol "quote") (symbol "a")))))))
-    ("`('a)"  should return '((list ((symbol "quasiquote") (list ((list ((symbol "quote") (symbol "a")))))))))
-    ("``a"    should return '((list ((symbol "quasiquote") (list ((symbol "quasiquote") (symbol "a"))))))))
+(when "reading quasiquote" using read
+  ("`a"     should return '((list ((symbol "quasiquote") (symbol "a")))))
+  ("`5"     should return '((list ((symbol "quasiquote") (literal 5)))))
+  ("`()"    should return '((list ((symbol "quasiquote") (list ())))))
+  ("`(a)"   should return '((list ((symbol "quasiquote") (list ((symbol "a")))))))
+  ("`(a 5)" should return '((list ((symbol "quasiquote") (list ((symbol "a") (literal 5)))))))
+  ("`'a"    should return '((list ((symbol "quasiquote") (list ((symbol "quote") (symbol "a")))))))
+  ("`('a)"  should return '((list ((symbol "quasiquote") (list ((list ((symbol "quote") (symbol "a")))))))))
+  ("``a"    should return '((list ((symbol "quasiquote") (list ((symbol "quasiquote") (symbol "a"))))))))
 
-  (when "reading unquote" using read
-    (",a"     should return '((list ((symbol "unquote") (symbol "a")))))
-    (",5"     should return '((list ((symbol "unquote") (literal 5)))))
-    (",()"    should return '((list ((symbol "unquote") (list ())))))
-    (",(a)"   should return '((list ((symbol "unquote") (list ((symbol "a")))))))
-    (",(a 5)" should return '((list ((symbol "unquote") (list ((symbol "a") (literal 5)))))))
-    (",'a"    should return '((list ((symbol "unquote") (list ((symbol "quote") (symbol "a")))))))
-    (",('a)"  should return '((list ((symbol "unquote") (list ((list ((symbol "quote") (symbol "a")))))))))
-    (",`a"    should return '((list ((symbol "unquote") (list ((symbol "quasiquote") (symbol "a"))))))))
+(when "reading unquote" using read
+  (",a"     should return '((list ((symbol "unquote") (symbol "a")))))
+  (",5"     should return '((list ((symbol "unquote") (literal 5)))))
+  (",()"    should return '((list ((symbol "unquote") (list ())))))
+  (",(a)"   should return '((list ((symbol "unquote") (list ((symbol "a")))))))
+  (",(a 5)" should return '((list ((symbol "unquote") (list ((symbol "a") (literal 5)))))))
+  (",'a"    should return '((list ((symbol "unquote") (list ((symbol "quote") (symbol "a")))))))
+  (",('a)"  should return '((list ((symbol "unquote") (list ((list ((symbol "quote") (symbol "a")))))))))
+  (",`a"    should return '((list ((symbol "unquote") (list ((symbol "quasiquote") (symbol "a"))))))))
 
-  (when "reading unquote-splicing" using read
-    (",@a"     should return '((list ((symbol "unquote-splicing") (symbol "a")))))
-    (",@5"     should return '((list ((symbol "unquote-splicing") (literal 5)))))
-    (",@()"    should return '((list ((symbol "unquote-splicing") (list ())))))
-    (",@(a)"   should return '((list ((symbol "unquote-splicing") (list ((symbol "a")))))))
-    (",@(a 5)" should return '((list ((symbol "unquote-splicing") (list ((symbol "a") (literal 5)))))))
-    (",@'a"    should return '((list ((symbol "unquote-splicing") (list ((symbol "quote") (symbol "a")))))))
-    (",@('a)"  should return '((list ((symbol "unquote-splicing") (list ((list ((symbol "quote") (symbol "a")))))))))
-    (",@`a"    should return '((list ((symbol "unquote-splicing") (list ((symbol "quasiquote") (symbol "a"))))))))
+(when "reading unquote-splicing" using read
+  (",@a"     should return '((list ((symbol "unquote-splicing") (symbol "a")))))
+  (",@5"     should return '((list ((symbol "unquote-splicing") (literal 5)))))
+  (",@()"    should return '((list ((symbol "unquote-splicing") (list ())))))
+  (",@(a)"   should return '((list ((symbol "unquote-splicing") (list ((symbol "a")))))))
+  (",@(a 5)" should return '((list ((symbol "unquote-splicing") (list ((symbol "a") (literal 5)))))))
+  (",@'a"    should return '((list ((symbol "unquote-splicing") (list ((symbol "quote") (symbol "a")))))))
+  (",@('a)"  should return '((list ((symbol "unquote-splicing") (list ((list ((symbol "quote") (symbol "a")))))))))
+  (",@`a"    should return '((list ((symbol "unquote-splicing") (list ((symbol "quasiquote") (symbol "a"))))))))
 
-  (when "reading comments" using read
-    ("; hi" should return '((comment " hi")))
-    ("(;a\nb\nc)"      should return '((list ((comment "a") (symbol "b") (symbol "c")))))
-    ("(a\n;b\nc)"      should return '((list ((symbol "a") (comment "b") (symbol "c")))))
-    ("(a\nb\n;c\n)"    should return '((list ((symbol "a") (symbol "b") (comment "c"))))))
+(when "reading comments" using read
+  ("; hi" should return '((comment " hi")))
+  ("(;a\nb\nc)"      should return '((list ((comment "a") (symbol "b") (symbol "c")))))
+  ("(a\n;b\nc)"      should return '((list ((symbol "a") (comment "b") (symbol "c")))))
+  ("(a\nb\n;c\n)"    should return '((list ((symbol "a") (symbol "b") (comment "c"))))))
 
-  (when "reading toplevel" using read
-    ("a b c" should return '((symbol "a") (symbol "b") (symbol "c"))))
-
-  run-tests))
+(when "reading toplevel" using read
+  ("a b c" should return '((symbol "a") (symbol "b") (symbol "c"))))
