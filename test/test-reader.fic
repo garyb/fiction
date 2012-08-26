@@ -37,13 +37,13 @@
     ("1"    should return '(literal 1))
     ("0.5"  should return '(literal 0.5))
     ("0xFF" should return '(literal 0xFF))
-    ("1a"   should fail   "Invalid number '1a' (line 1, char 2)")
-    ("0xFG" should fail   "Invalid number '0xFG' (line 1, char 4)"))
+    ("1a"   should fail   "Invalid number '1a' (line 1, char 1)")
+    ("0xFG" should fail   "Invalid number '0xFG' (line 1, char 1)"))
     
   (when "reading strings" using read
     ("\"word\""                should return '(literal "word"))
     ("\"escape \\\"this\\\"\"" should return '(literal "escape \\\"this\\\""))
-    ("\"unterminated"          should fail   "Unterminated string (line 1, char 1)"))
+    ("\"unterminated"          should fail   "Unterminated string, expected a closing '\"' (line 1, char 1)"))
     
   ;(when "reading regular expressions" using read)
 
