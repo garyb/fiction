@@ -74,7 +74,7 @@
 ; TODO: some way of instance checking without resorting to the nonsense below 
 ; for RegExp.
 (var equal? (fn (x y)
-  (cond [(eqv? x y) #t]
+  (cond [(eq? x y) #t]
         [(and (.isArray Array x)
               (.isArray Array y)
               (eq? (.length x) (.length y)))
