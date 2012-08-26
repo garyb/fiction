@@ -71,17 +71,22 @@
 ; create symbols in each case is different. Need to work out some way to have a
 ; universal symbol table across different environments (node & browser...
 ; a window.symbol kind of thing might work in the browser although v. hacky).
+; TODO: some way of instance checking without resorting to the nonsense below 
+; for RegExp.
 (var equal? (fn (x y)
-  (if (eq? x y)
-      #t
-      (if (and (.isArray Array x) 
-               (.isArray Array y) 
-               (eq? (.length x) (.length y)))
-          (let loop ([i 0]
-                     [l (.length x)])
-            (cond
-              [(eq? i l) #t]
-              [(equal? (. x i) (. y i)) (loop (+ i 1) l)]
-              [else #f]))
-          (and (.isSymbol x) (.isSymbol y) (eq? ((.toString x)) ((.toString y))))))))
+  (cond [(eqv? x y) #t]
+        [(and (.isArray Array x)
+              (.isArray Array y)
+              (eq? (.length x) (.length y)))
+         (let loop ([i 0]
+                    [l (.length x)])
+           (cond
+             [(eq? i l) #t]
+             [(equal? (. x i) (. y i)) (loop (+ i 1) l)]
+             [else #f]))]
+        [(and (.isSymbol x)
+              (.isSymbol y)) 
+         (eq? ((.toString x)) ((.toString y)))]
+        [(eq? (.__proto__ x) (.prototype RegExp)) (eq? (.source x) (.source y))]
+        [else #f])))
       
