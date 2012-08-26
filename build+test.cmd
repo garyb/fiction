@@ -11,7 +11,7 @@ IF %ERRORLEVEL% NEQ 0 GOTO testerror
 node src/js/test.js bin/test-reader.js
 GOTO end
 
-:compilerreader
+:readerrerror
 echo.
 echo Error compiling reader
 echo.
