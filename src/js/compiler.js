@@ -309,7 +309,7 @@ define(["util", "javascript"], function (util, js) {
         env = tmp.env;
         var ename = compile(args[1].value[1], env).value;
         var catchExpr = compile(args[1].value[2], env).value;
-        return { value: "try {\n\t" + tryExpr.replace(/\n/g, "\n\t") + ";\n} catch (" + ename + ") {\n\t" + catchExpr.replace(/\n/g, "\n\t") + ";\n}", env: env };
+        return { value: "try {\n\t" + tryExpr.replace(/\n/g, "\n\t") + ";\n} catch (" + ename + ") {\n\t" + ename + " = " + ename + ".message;\n\t" + catchExpr.replace(/\n/g, "\n\t") + ";\n}", env: env };
     }
     
     // ------------------------------------------------------------------------
