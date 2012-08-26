@@ -11,6 +11,8 @@
 
   (var read (fn (input check)
     (check (.read reader input))))
+    
+  ; TODO: quickcheck style testing for things like unicode sequences, number literals, etc.
 
   (when "reading symbols" using read
     ("a"            should return '(symbol "a"))
@@ -40,9 +42,13 @@
     ("1a"   should fail   "Invalid number '1a' (line 1, char 1)")
     ("0xFG" should fail   "Invalid number '0xFG' (line 1, char 1)"))
     
+  
   (when "reading strings" using read
     ("\"word\""                should return '(literal "word"))
     ("\"escape \\\"this\\\"\"" should return '(literal "escape \\\"this\\\""))
+    ("\"good: \\u003B\""       should return '(literal "good: \\u003B"))
+    ("\"bad: \\u3B\""          should fail   "Invalid unicode escape sequence '\\u3B' (line 1, char 9)")
+    ("\"bad: \\u000g\""        should fail   "Invalid unicode escape sequence '\\u000' (line 1, char 9)")
     ("\"unterminated"          should fail   "Unterminated string, expected a closing '\"' (line 1, char 1)"))
     
   ;(when "reading regular expressions" using read)

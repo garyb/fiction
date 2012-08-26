@@ -31,13 +31,13 @@
                   (++ (.charNum state))
                   char]))))
 
-  (var read-to-delimiter (fn (state)
+  (var read-chunk (fn (state is-delimiter?)
     (let loop1 ([chunk ""]
                 [char (peek-char state)])
-      (case char
-            [(" " "(" "[" "{" "}" "]" ")" "\"" "'" "`" "," ";" "\n" end) chunk]
-            [else (read-char state)
-                  (loop1 (+ chunk char) (peek-char state))]))))
+      (if (is-delimiter? char)
+          chunk
+          (do (read-char state)
+              (loop1 (+ chunk char) (peek-char state)))))))
 
   ;----------------------------------------------------------------------------
   ; Whitespace/ignored chars
@@ -62,7 +62,17 @@
     (obj ["'" "quote"]
          ["`" "quasiquote"]))
 
-  (var escape-chars (make-lookup "u" "b" "t" "n" "v" "f" "r" "\"" "'" "\\"))
+  (var escape-chars (make-lookup "b" "t" "n" "v" "f" "r" "\"" "'" "\\"))
+  
+  (var is-std-delimiter? (fn (char)
+    (case char
+          [(" " "(" "[" "{" "}" "]" ")" "\"" "'" "`" "," ";" "\n" end) #t]
+          [else #f])))
+        
+  (var is-unicode-delimiter? (fn (char)
+    (if (eq? char 'end)
+        #t
+        (not (.test #/^[a-f0-9]$/i char)))))
 
   ;----------------------------------------------------------------------------
   ; Readers
@@ -122,17 +132,26 @@
       (let loop4 ([chunk ""]
                   [escaped false])
         (let ([char (read-char state)])
-          (case char
-                [end ((read-error "Unterminated string, expected a closing '\"'") orig-state)]
-                ["\\" (loop4 (+ chunk char) true)]
-                ["\"" (if escaped
-                          (loop4 (+ chunk char))
-                          `(literal ,chunk))]
-                [else (if escaped
-                          (if (. escape-chars char)
-                              (loop4 (+ chunk char) false)
-                              ((read-error "Invalid escape sequence: \\" char) state))
-                          (loop4 (+ chunk char) false))]))))))
+          (if (eq? char 'end)
+              ((read-error "Unterminated string, expected a closing '\"'") orig-state)
+              (if escaped
+                  (case char
+                        ["\\" (loop4 (+ chunk char) true)]
+                        ["u" (loop4 (+ chunk (read-unicode-escape state orig-state)) false)]
+                        [else (if (. escape-chars char)
+                                  (loop4 (+ chunk char) false)
+                                  ((read-error "Invalid escape sequence: \\" char) state))])
+                  (case char
+                        ["\\" (loop4 (+ chunk char) true)]
+                        ["\"" `(literal ,chunk)]
+                        [else (loop4 (+ chunk char) false)]))))))))
+                        
+  (var read-unicode-escape (fn (state orig-state)
+    (let ([unicode-orig-state (clone state)]
+          [chunk (read-chunk state is-unicode-delimiter?)])
+    (if (eq? (.length chunk) 4)
+        (+ "u" chunk)
+        ((read-error "Invalid unicode escape sequence '\\u" chunk "'") unicode-orig-state)))))
               
   (var read-regex (fn (state)
     (error "TODO: read-regex")))
@@ -141,7 +160,7 @@
     (let ([orig-state (clone state)]
           [rx-num #/^[0-9\.]+$/]
           [rx-hex #/^0x[0-9A-F]+$/i]
-          [chunk (read-to-delimiter state)])
+          [chunk (read-chunk state is-std-delimiter?)])
       (cond [(.test rx-num chunk) `(literal ,(parseFloat chunk 10))]
             [(.test rx-hex chunk) `(literal ,(parseInt chunk 16))]
             [else ((read-error "Invalid number '" chunk "'") orig-state)]))))
@@ -155,14 +174,14 @@
             [else ((read-error "read-special: unknown value") state)]))))
 
   (var read-symbol (fn (state)
-    `(symbol ,(read-to-delimiter state))))
+    `(symbol ,(read-chunk state is-std-delimiter?))))
 
   ;----------------------------------------------------------------------------
   ; Special (#-prefix) readers
   ;----------------------------------------------------------------------------
 
   (var read-bool (fn (state orig-state)
-    (let ([chunk (read-to-delimiter state)])
+    (let ([chunk (read-chunk state is-std-delimiter?)])
       (case chunk
             ["t" (read-char state) '(literal #t)]
             ["f" (read-char state) '(literal #f)]
