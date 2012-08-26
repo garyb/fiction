@@ -138,12 +138,13 @@
     (error "TODO: read-regex")))
 
   (var read-number (fn (state)
-    (let ([rx-num #/^[0-9\.]+$/]
+    (let ([orig-state (clone state)]
+          [rx-num #/^[0-9\.]+$/]
           [rx-hex #/^0x[0-9A-F]+$/i]
           [chunk (read-to-delimiter state)])
-      (cond ((.test rx-num chunk) `(literal ,(parseFloat chunk 10)))
-            ((.test rx-hex chunk) `(literal ,(parseInt chunk 16)))
-            (else ((read-error "Invalid number literal" chunk)) state)))))
+      (cond [(.test rx-num chunk) `(literal ,(parseFloat chunk 10))]
+            [(.test rx-hex chunk) `(literal ,(parseInt chunk 16))]
+            [else ((read-error "Invalid number '" chunk "'") orig-state)]))))
 
   (var read-special (fn (state)
     (read-char state)
