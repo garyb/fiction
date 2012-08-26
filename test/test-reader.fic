@@ -25,7 +25,7 @@
     ("under_scored" should return '(symbol "under_scored"))
     (".length"      should return '(symbol ".length"))
     ("úņīčőđē"      should return '(symbol "úņīčőđē"))
-    ("dot.ted"      should fail   "Invalid use of '.' in symbol (line 1, char 4)"))
+    ("dot.ted"      should fail   "Invalid use of '.' in symbol (line 1, char 1)"))
     
   (when "reading booleans" using read
     ("#t"     should return '(literal #t))

@@ -174,7 +174,11 @@
             [else ((read-error "read-special: unknown value") state)]))))
 
   (var read-symbol (fn (state)
-    `(symbol ,(read-chunk state is-std-delimiter?))))
+    (let ([orig-state (clone state)]
+          [name (read-chunk state is-std-delimiter?)])
+      (if (> (.indexOf name ".") 0)
+          ((read-error "Invalid use of '.' in symbol") orig-state)
+          `(symbol ,name)))))
 
   ;----------------------------------------------------------------------------
   ; Special (#-prefix) readers
