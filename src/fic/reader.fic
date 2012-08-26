@@ -62,7 +62,12 @@
     (obj ["'" "quote"]
          ["`" "quasiquote"]))
 
-  (var escape-chars (make-lookup "b" "t" "n" "v" "f" "r" "\"" "'" "\\"))
+  (var str-escape-chars (make-lookup "b" "t" "n" "v" "f" "r" "\"" "'" "\\"))
+  
+  (var regex-escape-chars (make-lookup 
+    "t" "n" "v" "f" "r" "\"" "'" "\\"
+    "b" "B" "c" "d" "D" "f" "n" "r" "s" "S" "t" "v" "w" "W" 
+    1 2 3 4 5 6 7 8 9))
   
   (var is-std-delimiter? (fn (char)
     (case char
@@ -129,7 +134,7 @@
   (var read-string (fn (state)
     (let ([orig-state (clone state)])
       (read-char state)
-      `(literal ,(read-stringlike state "string" "\"" orig-state)))))
+      `(literal ,(read-stringlike state "string" "\"" str-escape-chars orig-state)))))
                         
   (var read-unicode-escape (fn (state orig-state)
     (let ([unicode-orig-state (clone state)]
@@ -175,13 +180,13 @@
             
   (var read-regex (fn (state orig-state)
     (read-char state)
-    (let ([expr (read-stringlike state "regular expression" "/" orig-state)]
+    (let ([expr (read-stringlike state "regular expression" "/" regex-escape-chars orig-state)]
           [options (read-chunk state is-std-delimiter?)])
       (if (.test #/^[gim]*$/ options)
           `(literal ,((new RegExp) expr options))
           ((read-error "Invalid regular expression options 's'") orig-state)))))
 
-  (var read-stringlike (fn (state type term orig-state)
+  (var read-stringlike (fn (state type term escape-chars orig-state)
     (let loop4 ([chunk ""]
                 [escaped false])
       (let ([char (read-char state)])

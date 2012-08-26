@@ -54,7 +54,7 @@
   (when "reading regular expressions" using read
     ("#/[a-z]/"    should return '(literal #/[a-z]/))
     ("#/[a-z]/gim" should return '(literal #/[a-z]/gim))
-    ("#/\\b\\B\\cX\\d\\D\\f\\n\\r\\s\\S\\t\\v\\w\\W\\1\\2\\3\\4\\5\\6\\7\\8\\9/" should return '(literal #/\b\B\cM\d\dD\f\n\r\s\S\t\v\w\W\1\2\3\4\5\6\7\8\9/))
+    ("#/\\b\\B\\cX\\d\\D\\f\\n\\r\\s\\S\\t\\v\\w\\W\\1\\2\\3\\4\\5\\6\\7\\8\\9/" should return '(literal #/\b\B\cX\d\D\f\n\r\s\S\t\v\w\W\1\2\3\4\5\6\7\8\9/))
     ("#/[a-z]/s"   should fail   "Invalid regular expression options 's' (line 1, char 1)"))
 
   run-tests))
