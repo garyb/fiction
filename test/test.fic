@@ -53,10 +53,9 @@
      result))))
 
 ; "should fail" behaviour.
-; TODO: reinstate message match checking
 (var fail (fn (expected k) (fn (result)
   (k (and (equal? (. result 0) 'failure)
-          #t)
+          (equal? (. result 1) expected))
      result))))
      
 (var pluralise (fn (str n) (if (eq? n 1) str (+ str "s"))))
