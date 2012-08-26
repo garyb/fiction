@@ -62,7 +62,7 @@
     (obj ["'" "quote"]
          ["`" "quasiquote"]))
 
-  (var escape-chars (make-lookup "b" "t" "n" "v" "f" "r" "\"" "'" "\\"))
+  (var escape-chars (make-lookup "u" "b" "t" "n" "v" "f" "r" "\"" "'" "\\"))
 
   ;----------------------------------------------------------------------------
   ; Readers
@@ -117,13 +117,13 @@
                   (loop3 (peek-char state))]))))
 
   (var read-string (fn (state)
-    (read-char state)
     (let ([orig-state (clone state)])
+      (read-char state)
       (let loop4 ([chunk ""]
                   [escaped false])
         (let ([char (read-char state)])
           (case char
-                [end ((read-error "Unclosed string, expected a closing '\"'") orig-state)]
+                [end ((read-error "Unterminated string, expected a closing '\"'") orig-state)]
                 ["\\" (loop4 (+ chunk char) true)]
                 ["\"" (if escaped
                           (loop4 (+ chunk char))
