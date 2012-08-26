@@ -126,13 +126,13 @@
                 [end ((read-error "Unclosed string, expected a closing '\"'") orig-state)]
                 ["\\" (loop4 (+ chunk char) true)]
                 ["\"" (if escaped
-              (loop4 (+ chunk char))
+                          (loop4 (+ chunk char))
                           `(literal ,chunk))]
                 [else (if escaped
-              (if (. escape-chars char)
-                  (loop4 (+ chunk char) false)
-                ((read-error "Invalid escape sequence: \\" char) state))
-              (loop4 (+ chunk char) false))]))))))
+                          (if (. escape-chars char)
+                              (loop4 (+ chunk char) false)
+                              ((read-error "Invalid escape sequence: \\" char) state))
+                          (loop4 (+ chunk char) false))]))))))
               
   (var read-regex (fn (state)
     (error "TODO: read-regex")))
