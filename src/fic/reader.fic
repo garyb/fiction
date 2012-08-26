@@ -129,22 +129,7 @@
   (var read-string (fn (state)
     (let ([orig-state (clone state)])
       (read-char state)
-      (let loop4 ([chunk ""]
-                  [escaped false])
-        (let ([char (read-char state)])
-          (if (eq? char 'end)
-              ((read-error "Unterminated string, expected a closing '\"'") orig-state)
-              (if escaped
-                  (case char
-                        ["\\" (loop4 (+ chunk char) true)]
-                        ["u" (loop4 (+ chunk (read-unicode-escape state orig-state)) false)]
-                        [else (if (. escape-chars char)
-                                  (loop4 (+ chunk char) false)
-                                  ((read-error "Invalid escape sequence: \\" char) state))])
-                  (case char
-                        ["\\" (loop4 (+ chunk char) true)]
-                        ["\"" `(literal ,chunk)]
-                        [else (loop4 (+ chunk char) false)]))))))))
+      `(literal ,(read-stringlike state "string" "\"" orig-state)))))
                         
   (var read-unicode-escape (fn (state orig-state)
     (let ([unicode-orig-state (clone state)]
@@ -152,9 +137,6 @@
     (if (eq? (.length chunk) 4)
         (+ "u" chunk)
         ((read-error "Invalid unicode escape sequence '\\u" chunk "'") unicode-orig-state)))))
-              
-  (var read-regex (fn (state)
-    (error "TODO: read-regex")))
 
   (var read-number (fn (state)
     (let ([orig-state (clone state)]
@@ -181,7 +163,7 @@
           `(symbol ,name)))))
 
   ;----------------------------------------------------------------------------
-  ; Special (#-prefix) readers
+  ; Special/helper readers
   ;----------------------------------------------------------------------------
 
   (var read-bool (fn (state orig-state)
@@ -190,7 +172,32 @@
             ["t" (read-char state) '(literal #t)]
             ["f" (read-char state) '(literal #f)]
             [else ((read-error "Invalid boolean value '#" chunk "', expected '#t' or '#f'") orig-state)]))))
+            
+  (var read-regex (fn (state orig-state)
+    (read-char state)
+    (let ([expr (read-stringlike state "regular expression" "/" orig-state)]
+          [options (read-chunk state is-std-delimiter?)])
+      (if (.test #/^[gim]*$/ options)
+          `(literal ,((new RegExp) expr options))
+          ((read-error "Invalid regular expression options 's'") orig-state)))))
 
+  (var read-stringlike (fn (state type term orig-state)
+    (let loop4 ([chunk ""]
+                [escaped false])
+      (let ([char (read-char state)])
+        (if (eq? char 'end)
+            ((read-error "Unterminated " type ", expected a closing '" term "'") orig-state)
+            (if escaped
+                (case char
+                      ["\\" (loop4 (+ chunk char) false)]
+                      ["u" (loop4 (+ chunk (read-unicode-escape state orig-state)) false)]
+                      [else (if (. escape-chars char)
+                                (loop4 (+ chunk char) false)
+                                ((read-error "Invalid escape sequence: \\" char) state))])
+                (cond [(eq? char "\\") (loop4 (+ chunk char) true)]
+                      [(eq? char term) chunk]
+                      [else (loop4 (+ chunk char) false)])))))))
+    
   ;----------------------------------------------------------------------------
   ; Main
   ;----------------------------------------------------------------------------

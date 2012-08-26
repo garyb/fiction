@@ -51,6 +51,10 @@
     ("\"bad: \\u000g\""        should fail   "Invalid unicode escape sequence '\\u000' (line 1, char 9)")
     ("\"unterminated"          should fail   "Unterminated string, expected a closing '\"' (line 1, char 1)"))
     
-  ;(when "reading regular expressions" using read)
+  (when "reading regular expressions" using read
+    ("#/[a-z]/"    should return '(literal #/[a-z]/))
+    ("#/[a-z]/gim" should return '(literal #/[a-z]/gim))
+    ("#/\\b\\B\\cX\\d\\D\\f\\n\\r\\s\\S\\t\\v\\w\\W\\1\\2\\3\\4\\5\\6\\7\\8\\9/" should return '(literal #/\b\B\cM\d\dD\f\n\r\s\S\t\v\w\W\1\2\3\4\5\6\7\8\9/))
+    ("#/[a-z]/s"   should fail   "Invalid regular expression options 's' (line 1, char 1)"))
 
   run-tests))
