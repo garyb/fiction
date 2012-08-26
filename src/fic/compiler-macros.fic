@@ -1,0 +1,4 @@
+(define-syntax make-lookup
+  (syntax-rules ()
+    [(_ k ...) 
+     (obj [k #t] ...)]))
