@@ -300,7 +300,7 @@ define(["util", "javascript"], function (util, js) {
             values[i] = tmp.value;
             env = tmp.env;
         }
-        return { value: "throw new Error(" + values.join(" + ") + ")", env: env };
+        return { value: "(function () { throw new Error(" + values.join(" + ") + ") }())", env: env };
     }
     
     function compileTry(args, env, form) {
