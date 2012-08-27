@@ -6,29 +6,26 @@
   (var clone (.clone util))
   (var copyProps (.copyProps util))
 
+  (var show (fn (out)
+    (cond [(.isArray Array out) (.join `("(" ,(.join (.map out show) " ") ")") "")]
+          [(eq? (typeof out) "string") (+ "\"" (+ out "\""))]
+          [else ((.toString out))])))
+
   (var expand-error (fn msg
     (fn (state)
       (error (.join (.concat msg `(" (line " ,(.lineNum state) ", char " ,(.charNum state) ")")) "")))))
-   
-  ;----------------------------------------------------------------------------
-  ; Imports
-  ;---------------------------------------------------------------------------- 
-  
-  (var find-all-imports (fn () '()))
-  
+
+
   ;----------------------------------------------------------------------------
   ; Main
   ;----------------------------------------------------------------------------
-  
-  (var get-default-env (fn () 
-    (obj))); ["import" expand-import])))
-              
-  (var expand-main (fn (input env load-import k)
-    (let* ([env (copyProps env (get-default-env))]
-           [imports (find-all-imports input)])
-      (load-import "test-expander" (fn (imported)
-        (.log console imported)
-        (k `(success ,input)))))))
+
+  (var get-default-env (fn ()
+    (obj))) ; ["import" expand-import])))
+
+  (var expand-main (fn (input env load-import)
+    (let* ([env (copyProps env (get-default-env))])
+        `(success ,input))))
 
   ;----------------------------------------------------------------------------
   ; Exports
