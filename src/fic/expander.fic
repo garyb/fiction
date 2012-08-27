@@ -3,16 +3,32 @@
 
 (define '("util") (fn (util)
 
+  (var clone (.clone util))
+  (var copyProps (.copyProps util))
+
   (var expand-error (fn msg
     (fn (state)
       (error (.join (.concat msg `(" (line " ,(.lineNum state) ", char " ,(.charNum state) ")")) "")))))
    
   ;----------------------------------------------------------------------------
+  ; Imports
+  ;---------------------------------------------------------------------------- 
+  
+  (var find-all-imports (fn () '()))
+  
+  ;----------------------------------------------------------------------------
   ; Main
   ;----------------------------------------------------------------------------
+  
+  (var get-default-env (fn () 
+    (obj))); ["import" expand-import])))
               
-  (var expand-main (fn (input k)
-    (k `(success ,input))))
+  (var expand-main (fn (input env load-import k)
+    (let* ([env (copyProps env (get-default-env))]
+           [imports (find-all-imports input)])
+      (load-import "test-expander" (fn (imported)
+        (.log console imported)
+        (k `(success ,input)))))))
 
   ;----------------------------------------------------------------------------
   ; Exports

@@ -1,24 +1,47 @@
-(define '("reader" "expander" "util") (fn (reader expander util)
+(define '("reader" "expander" "util" "fs" "path") (fn
+         ( reader   expander   util   fs   path)
 
-  (import "test")
+  (import "test" "../src/fic/compiler-macros")
 
+  ; Creates a string representation for test input strings.
   (set! show-input (fn (in) (+ (+ "\"" in) "\"")))
 
+  ; Creates a string representation for test output s-exprs.
   (set! show-output (fn (out)
     (cond [(.isArray Array out) (.join `("(" ,(.join (.map out show-output) " ") ")") "")]
           [(eq? (typeof out) "string") (+ "\"" (+ out "\""))]
           [else ((.toString out))])))
 
+  ; The global node.js environment, passed when expanding/compiling code so
+  ; references to these identifiers are handled correctly.
+  (var node-env (make-lookup
+    "__filename" "__dirname" "Buffer" "console" "exports" "GLOBAL" "global"
+    "module" "process" "require"))
+
+  ; Handles loading of import `name` and returns the result via `k`.
+  (var load-import (fn (name k)
+    (let* ([filename (.resolve path "test" (+ name ".fic"))]
+           [loaded (.readFileSync fs filename "utf8")]
+           [read-result (.read reader loaded)])
+      (if (equal? (. read-result 0) 'failure)
+        (error "Import '" name "' reading failed: " (show-output read-result))
+        (k (. read-result 1))))))
+
+  ; Runs the reader on string `input` and tests the result using `check`.
   (var read (fn (input check)
     (check (.read reader input))))
-    
+
+  ; Runs the reader and expander or string `input` and tests the result using
+  ; `check`.
   (var expand (fn (input check)
     (let ([read-result (.read reader input)])
       (if (equal? (. read-result 0) 'failure)
           (check `(reader-failure ,read-result))
-          (.expand expander (. read-result 1) (fn (expand-result)
+          (.expand expander (. read-result 1) node-env load-import (fn (expand-result)
             (check expand-result)))))))
-    
+
+  ; Import the actual test cases
   (import "test-reader" "test-expander")
 
+  ; Export the run function
   run-tests))
