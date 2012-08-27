@@ -13,6 +13,10 @@ define(function () {
         return out;
     }
     
+    function clone(obj) {
+        return copyProps(obj, {});
+    }
+    
     function createForm(type, value, extras) {
         if (type !== "literal" && type !== "symbol" && type !== "list") {
             throw new Error("Form must be a literal, symbol, or list, found: " + type);
@@ -128,6 +132,7 @@ define(function () {
     
     return {
         copyProps: copyProps,
+        clone: clone,
         printRawForm: printRawForm,
         printPretty: printPretty,
         createForm: createForm,

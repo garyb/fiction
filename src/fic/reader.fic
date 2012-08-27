@@ -3,12 +3,11 @@
 
 (define '("util") (fn (util)
 
+  (var clone (.clone util))
+
   (var read-error (fn msg
     (fn (state)
       (error (.join (.concat msg `(" (line " ,(.lineNum state) ", char " ,(.charNum state) ")")) "")))))
-
-  (var clone (fn (state)
-    (.copyProps util state (obj))))
 
   ;----------------------------------------------------------------------------
   ; Stream
