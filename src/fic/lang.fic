@@ -109,20 +109,20 @@
 ;
 (define-syntax case
   (syntax-rules (else)
-    ((case (key ...)
+    ((_ (key ...)
        clauses ...)
      (let ((atom-key (key ...)))
        (case atom-key clauses ...)))
-    ((case key
+    ((_ key
        (else result1 result2 ...))
      (do result1 result2 ...))
-    ((case key
+    ((_ key
        ((atom atoms ...) result1 result2 ...)
        clause clauses ...)
      (if (> (.indexOf '(atom atoms ...) key) (- 1))
          (do result1 result2 ...)
          (case key clause clauses ...)))
-    ((case key
+    ((_ key
        (atom result1 result2 ...)
        clause clauses ...)
      (if (eq? 'atom key)
