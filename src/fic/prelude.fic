@@ -13,3 +13,9 @@
 (var cadr (fn (xs) (car (cdr xs))))
 (var caddr (fn (xs) (car (cdr (cdr xs)))))
 (var cadddr (fn (xs) (car (cdr (cdr (cdr xs))))))
+
+(var in? (fn (obj prop)
+  (.call (.hasOwnProperty (.prototype Object)) obj prop)))
+  
+(var fn? (fn (f)
+  (eq? (typeof f) "function")))
