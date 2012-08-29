@@ -1,5 +1,10 @@
 (var s (obj [is-state #t]))
 
 (when "expanding to identity" using expand
+  ("1 #t" should return `((literal 1 ,s) (literal #t ,s)))
   ("a b" should return `((symbol "a" ,s) (symbol "b" ,s)))
   ("'a"  should return `((list ((symbol "quote" ,s) (symbol "a" ,s)) ,s))))
+  
+  
+(when "expanding comments" using expand
+  ("; foo" should return `()))

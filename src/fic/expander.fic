@@ -13,15 +13,14 @@
           [else ((.toString out))])))
 
   (var expand-error (fn msg
-    (fn (state)
-      (error (.join (.concat msg `(" (line " ,(.lineNum state) ", char " ,(.charNum state) ")")) "")))))
+      (error msg)))
       
   ;----------------------------------------------------------------------------
   ; Environment
   ;----------------------------------------------------------------------------
   
   (var get-default-env (fn ()
-    (obj))) ; ["import" expand-import])))
+    (obj ["import" expand-import])))
       
   ;----------------------------------------------------------------------------
   ; Expanders
@@ -29,21 +28,42 @@
   
   (var expand-import (fn (form env load-import import-chain)
     `(,`(,form) ,env)))
+    
+  ;----------------------------------------------------------------------------
+  ; Helpers
+  ;----------------------------------------------------------------------------
+  
+  (var update-symbol (fn (env id form)
+    (if (in? env id)
+        (let ([new-id (. env id)])
+          (if (fn? new-id)
+              (expand-error id ": bad syntax")
+              `(literal ,new-id ,(. form 2))))
+        ; TODO: this should possibly be an error rather than a fallback case
+        form)))
 
   ;----------------------------------------------------------------------------
   ; Main
   ;----------------------------------------------------------------------------
   
   (var expand (fn (form env load-import import-chain)
-    `(,`(,form) ,env)))
+    (letl ([type value pos] form)
+      (case type
+        [list `(,`(,form) ,env)]
+        [symbol `(,`(,(update-symbol env value form)) ,env)]
+        [literal `(,`(,form) ,env)]
+        [comment `(() ,env)]
+        [else (expand-error "expand: unknown form type " type)]))))
   
   (var expand-all (fn (seq env load-import import-chain)
-    (let ([result (fold-left (fn (result form)
-                               (let ([tmp (expand form env load-import import-chain)])
-                                 (set! env (. tmp 1))
-                                 (append result (. tmp 0))))
-                             '() seq)])
-      `(,result ,env))))
+    `(,(fold-left 
+         (fn (result form)
+           (letl ([result1 env1] (expand form env load-import import-chain))
+             (set! env env1)
+             (append result result1)))
+         '()
+         seq)
+      ,env)))
 
   (var expand-main (fn (input env load-import)
     (let* ([env (copyProps env (get-default-env))]

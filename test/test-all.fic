@@ -1,7 +1,7 @@
 (define '("reader" "expander" "util" "fs" "path") (fn
          ( reader   expander   util   fs   path)
 
-  (import "test" "../src/fic/compiler-macros")
+  (import "test" "../src/fic/prelude" "../src/fic/compiler-macros")
 
   ; Creates a string representation for test input strings.
   (set! show-input (fn (in) (+ (+ "\"" in) "\"")))
@@ -10,6 +10,8 @@
   (set! show-output (fn (out)
     (cond [(.isArray Array out) (.join `("(" ,(.join (.map out show-output) " ") ")") "")]
           [(eq? (typeof out) "string") (+ "\"" (+ out "\""))]
+          [(eqv? out null) "null"]
+          [(in? out "id") (+ "{" (+ (.id out) "}"))]
           [else ((.toString out))])))
 
   ; The global node.js environment, passed when expanding/compiling code so
