@@ -7,11 +7,21 @@
 
   (var read-error (fn msg
     (fn (state)
-      (error (.join (.concat msg `(" (line " ,(.lineNum state) ", char " ,(.charNum state) ")")) "")))))
+      (let ([line (.lineNum state)]
+            [char (.charNum state)])
+        (error (.join (.concat msg `(" (line " ,line ", char " ,char ")")) ""))))))
 
   ;----------------------------------------------------------------------------
   ; Stream
   ;----------------------------------------------------------------------------
+  
+  (var make-state (fn (input)
+    (obj [is-state #t]
+         [input input]
+         [i 0]
+         [l (.length input)]
+         [charNum 1]
+         [lineNum 1])))
 
   (var peek-char (fn (state)
     (if (< (.i state) (.l state))
@@ -44,9 +54,9 @@
 
   (var consume-whitespace (fn (state)
     (case (peek-char state)
-          [(" " "\t" "\r" "\n") (read-char state)
-                                (consume-whitespace state)]
-          [else state])))
+      [(" " "\t" "\r" "\n") (read-char state)
+                            (consume-whitespace state)]
+      [else state])))
 
   ;----------------------------------------------------------------------------
   ; Lookups
@@ -63,15 +73,15 @@
 
   (var str-escape-chars (make-lookup "b" "t" "n" "v" "f" "r" "\"" "'" "\\"))
   
-  (var regex-escape-chars (make-lookup 
+  (var regex-escape-chars (make-lookup
     "t" "n" "v" "f" "r" "\"" "'" "\\"
     "b" "B" "c" "d" "D" "f" "n" "r" "s" "S" "t" "v" "w" "W" 
     1 2 3 4 5 6 7 8 9))
   
   (var is-std-delimiter? (fn (char)
     (case char
-          [(" " "(" "[" "{" "}" "]" ")" "\"" "'" "`" "," ";" "\n" end) #t]
-          [else #f])))
+      [(" " "(" "[" "{" "}" "]" ")" "\"" "'" "`" "," ";" "\n" end) #t]
+      [else #f])))
         
   (var is-unicode-delimiter? (fn (char)
     (if (eq? char 'end)
@@ -91,99 +101,107 @@
       (let loop2 ([values '()]
                   [char (peek-char state)])
         (case char
-              [end ((read-error "Unclosed list, expected a closing '" close-char "'") orig-state)]
-              [else (if (eq? char close-char)
-                        (do (read-char state)
-                            `(list ,values))
-                        (do (.push values (read state))
-                            (consume-whitespace state)
-                            (loop2 values (peek-char state))))])))))
+          [end ((read-error "Unclosed list, expected a closing '" close-char "'") orig-state)]
+          [else (if (eq? char close-char)
+                    (do (read-char state)
+                        `(list ,values ,orig-state))
+                    (do (.push values (read state))
+                        (consume-whitespace state)
+                        (loop2 values (peek-char state))))])))))
 
   (var read-unexpected-char-error (fn (state)
     (let ([char (peek-char state)])
       ((read-error "Unexpected '" char "'") state))))
 
   (var read-quote (fn (state)
-    (let ([type (. quote-name (read-char state))]
+    (let ([orig-state (clone state)]
+          [type (. quote-name (read-char state))]
           [datum (read state)])
       (case datum
-            [end ((read-error "Expected datum for " type) state)]
-            [else `(list ((symbol ,type) ,datum))]))))
+        [end ((read-error "Expected datum for " type) state)]
+        [else `(list ((symbol ,type ,orig-state) ,datum) ,orig-state)]))))
 
   (var read-unquote (fn (state)
     (read-char state)
-    (let ([type (case (peek-char state)
+    (let ([orig-state (clone state)]
+          [type (case (peek-char state)
                       ["@" (read-char state)
                            "unquote-splicing"]
                       [else "unquote"])]
           [datum (read state)])
       (case datum
-            [end ((read-error "Expected datum for " type) state)]
-            [else `(list ((symbol ,type) ,datum))]))))
+        [end ((read-error "Expected datum for " type) state)]
+        [else `(list ((symbol ,type ,orig-state) ,datum) ,orig-state)]))))
 
   (var read-comment (fn (state)
-    (let loop3 ([chunk ""]
+    (let loop3 ([orig-state (clone state)]
+                [chunk ""]
                 [char (peek-char state)])
       (case char
-            [("\n" end) (read-char state)
-                        `(comment ,(.substring chunk 1))]
-            [else (read-char state)
-                  (loop3 (+ chunk char) (peek-char state))]))))
+        [("\n" end) (read-char state)
+                    `(comment ,(.substring chunk 1) ,orig-state)]
+        [else (read-char state)
+              (loop3 orig-state (+ chunk char) (peek-char state))]))))
 
   (var read-string (fn (state)
     (let ([orig-state (clone state)])
       (read-char state)
-      `(literal ,(read-stringlike state "string" "\"" str-escape-chars orig-state)))))
-                        
-  (var read-unicode-escape (fn (state orig-state)
-    (let ([unicode-orig-state (clone state)]
-          [chunk (read-chunk state is-unicode-delimiter?)])
-    (if (eq? (.length chunk) 4)
-        (+ "u" chunk)
-        ((read-error "Invalid unicode escape sequence '\\u" chunk "'") unicode-orig-state)))))
+      `(literal ,(read-stringlike state "string" "\"" str-escape-chars orig-state) ,orig-state))))
 
   (var read-number (fn (state)
     (let ([orig-state (clone state)]
           [rx-num #/^[0-9\.]+$/]
           [rx-hex #/^0x[0-9A-F]+$/i]
           [chunk (read-chunk state is-std-delimiter?)])
-      (cond [(.test rx-num chunk) `(literal ,(parseFloat chunk 10))]
-            [(.test rx-hex chunk) `(literal ,(parseInt chunk 16))]
-            [else ((read-error "Invalid number '" chunk "'") orig-state)]))))
+      (cond
+        [(.test rx-num chunk) `(literal ,(parseFloat chunk 10) ,orig-state)]
+        [(.test rx-hex chunk) `(literal ,(parseInt chunk 16) ,orig-state)]
+        [else ((read-error "Invalid number '" chunk "'") orig-state)]))))
 
   (var read-special (fn (state)
     (let ([orig-state (clone state)])
       (read-char state)
       (case (peek-char state)
-            [("t" "f") (read-bool state orig-state)]
-            ["/" (read-regex state orig-state)]
-            [else ((read-error "read-special: unknown value") state)]))))
+        [("t" "f") (read-bool state orig-state)]
+        ["/" (read-regex state orig-state)]
+        [else ((read-error "read-special: unknown value") state)]))))
 
   (var read-symbol (fn (state)
     (let ([orig-state (clone state)]
           [name (read-chunk state is-std-delimiter?)])
       (if (> (.indexOf name ".") 0)
           ((read-error "Invalid use of '.' in symbol") orig-state)
-          `(symbol ,name)))))
+          `(symbol ,name ,orig-state)))))
 
   ;----------------------------------------------------------------------------
-  ; Special/helper readers
+  ; Special readers
   ;----------------------------------------------------------------------------
 
   (var read-bool (fn (state orig-state)
     (let ([chunk (read-chunk state is-std-delimiter?)])
       (case chunk
-            ["t" (read-char state) '(literal #t)]
-            ["f" (read-char state) '(literal #f)]
-            [else ((read-error "Invalid boolean value '#" chunk "', expected '#t' or '#f'") orig-state)]))))
+        ["t" (read-char state) `(literal #t ,orig-state)]
+        ["f" (read-char state) `(literal #f ,orig-state)]
+        [else ((read-error "Invalid boolean value '#" chunk "', expected '#t' or '#f'") orig-state)]))))
             
   (var read-regex (fn (state orig-state)
     (read-char state)
     (let ([expr (read-stringlike state "regular expression" "/" regex-escape-chars orig-state)]
           [options (read-chunk state is-std-delimiter?)])
       (if (.test #/^[gim]*$/ options)
-          `(literal ,((new RegExp) expr options))
+          `(literal ,((new RegExp) expr options) ,orig-state)
           ((read-error "Invalid regular expression options 's'") orig-state)))))
+          
+  ;----------------------------------------------------------------------------
+  ; Reader helpers
+  ;----------------------------------------------------------------------------
+          
+  (var read-unicode-escape (fn (state orig-state)
+    (let ([unicode-orig-state (clone state)]
+          [chunk (read-chunk state is-unicode-delimiter?)])
+    (if (eq? (.length chunk) 4)
+        (+ "u" chunk)
+        ((read-error "Invalid unicode escape sequence '\\u" chunk "'") unicode-orig-state)))))
 
   (var read-stringlike (fn (state type term escape-chars orig-state)
     (let loop4 ([chunk ""]
@@ -193,14 +211,14 @@
             ((read-error "Unterminated " type ", expected a closing '" term "'") orig-state)
             (if escaped
                 (case char
-                      ["\\" (loop4 (+ chunk char) false)]
-                      ["u" (loop4 (+ chunk (read-unicode-escape state orig-state)) false)]
-                      [else (if (. escape-chars char)
-                                (loop4 (+ chunk char) false)
-                                ((read-error "Invalid escape sequence: \\" char) state))])
-                (cond [(eq? char "\\") (loop4 (+ chunk char) true)]
-                      [(eq? char term) chunk]
-                      [else (loop4 (+ chunk char) false)])))))))
+                  ["\\" (loop4 (+ chunk char) false)]
+                  ["u" (loop4 (+ chunk (read-unicode-escape state orig-state)) false)]
+                  [else (if (. escape-chars char)
+                            (loop4 (+ chunk char) false)
+                            ((read-error "Invalid escape sequence: \\" char) state))])
+                (cond
+                  [(eq? char term) chunk]
+                  [else (loop4 (+ chunk char) (eq? char "\\"))])))))))
     
   ;----------------------------------------------------------------------------
   ; Main
@@ -208,35 +226,31 @@
 
   (var run-reader (fn (char state)
     ((case char
-           [("(" "[" "{") read-list]
-           [(")" "]" "}") read-unexpected-char-error]
-           [("'" "`") read-quote]
-           ["," read-unquote]
-           [";" read-comment]
-           ["\"" read-string]
-           [("0" "1" "2" "3" "4" "5" "6" "7" "8" "9") read-number]
-           ["#" read-special]
-           [else read-symbol]) state)))
+       [("(" "[" "{") read-list]
+       [(")" "]" "}") read-unexpected-char-error]
+       [("'" "`") read-quote]
+       ["," read-unquote]
+       [";" read-comment]
+       ["\"" read-string]
+       [("0" "1" "2" "3" "4" "5" "6" "7" "8" "9") read-number]
+       ["#" read-special]
+       [else read-symbol]) state)))
 
   (var read (fn (state)
     (consume-whitespace state)
     (let ([char (peek-char state)])
       (case char
-            [end 'end]
-            [else (run-reader char state)]))))
+        [end 'end]
+        [else (run-reader char state)]))))
 
   (var read-all (fn (input)
-    (let ([state (obj (input input)
-                      (i 0)
-                      (l (.length input))
-                      (charNum 1)
-                      (lineNum 1))])
-      (let loop0 ([result '()]
-                  [value (read state)])
+    (let ([state (make-state input)]
+          [result '()])
+      (let loop0 ([value (read state)])
         (case value
-              [end result]
-              [else (.push result value)
-                    (loop0 result (read state))])))))
+          [end result]
+          [else (.push result value)
+                (loop0 (read state))])))))
               
   (var read-main (fn (input)
     (try (let ([result (read-all input)])
