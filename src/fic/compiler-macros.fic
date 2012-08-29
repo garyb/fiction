@@ -2,3 +2,17 @@
   (syntax-rules ()
     [(_ k ...) 
      (obj [k #t] ...)]))
+     
+(define-syntax letl
+  (syntax-rules ()
+    [(_ (e1 e2 ...) (id1 id2 ...) body1 body2 ...) 
+     (let ([tmp-lst (e1 e2 ...)])
+       (letl tmp-lst (id1 id2 ...) body1 body2 ...))]
+    [(_ lst (id1 id2 ...) body1 body2 ...) 
+     (let ([id1 (. lst 0)])
+       (letl "i" lst 1 (id2 ...) body1 body2 ...))]
+    [(_ "i" lst ix (id) body1 body2 ...)
+     (let ([id (. lst ix)]) body1 body2 ...)]
+    [(_ "i" lst ix (id1 id2 ...) body1 body2 ...)
+     (let ([id1 (. lst ix)])
+       (letl "i" lst (+ ix 1) (id2 ...) body1 body2 ...))]))
