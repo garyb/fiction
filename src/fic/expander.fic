@@ -1,4 +1,5 @@
 (import "lang")
+(import "prelude")
 (import "compiler-macros")
 
 (define '("util") (fn (util)
@@ -14,18 +15,40 @@
   (var expand-error (fn msg
     (fn (state)
       (error (.join (.concat msg `(" (line " ,(.lineNum state) ", char " ,(.charNum state) ")")) "")))))
-
+      
+  ;----------------------------------------------------------------------------
+  ; Environment
+  ;----------------------------------------------------------------------------
+  
+  (var get-default-env (fn ()
+    (obj))) ; ["import" expand-import])))
+      
+  ;----------------------------------------------------------------------------
+  ; Expanders
+  ;----------------------------------------------------------------------------
+  
+  (var expand-import (fn (form env load-import import-chain)
+    `(,`(,form) ,env)))
 
   ;----------------------------------------------------------------------------
   ; Main
   ;----------------------------------------------------------------------------
-
-  (var get-default-env (fn ()
-    (obj))) ; ["import" expand-import])))
+  
+  (var expand (fn (form env load-import import-chain)
+    `(,`(,form) ,env)))
+  
+  (var expand-all (fn (seq env load-import import-chain)
+    (let ([result (fold-left (fn (result form)
+                               (let ([tmp (expand form env load-import import-chain)])
+                                 (set! env (. tmp 1))
+                                 (append result (. tmp 0))))
+                             '() seq)])
+      `(,result ,env))))
 
   (var expand-main (fn (input env load-import)
-    (let* ([env (copyProps env (get-default-env))])
-        `(success ,input))))
+    (let* ([env (copyProps env (get-default-env))]
+           [tmp (expand-all input env load-import '())])
+        `(success ,(. tmp 0)))))
 
   ;----------------------------------------------------------------------------
   ; Exports

@@ -1,4 +1,5 @@
 (var s (obj [is-state #t]))
 
 (when "expanding to identity" using expand
-  ("'a" should return `((list ((symbol "quote" ,s) (symbol "a" ,s)) ,s))))
+  ("a b" should return `((symbol "a" ,s) (symbol "b" ,s)))
+  ("'a"  should return `((list ((symbol "quote" ,s) (symbol "a" ,s)) ,s))))
