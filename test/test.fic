@@ -75,6 +75,8 @@
 ; for RegExp.
 (var equal? (fn (x y)
   (cond [(eq? x y) #t]
+        [(eqv? x null) #f]
+        [(eqv? y null) #f]
         [(and (.isArray Array x)
               (.isArray Array y)
               (eq? (.length x) (.length y)))
