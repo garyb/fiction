@@ -84,9 +84,6 @@
              [(eq? i l) #t]
              [(equal? (. x i) (. y i)) (loop (+ i 1) l)]
              [else #f]))]
-        [(and (.isSymbol x)
-              (.isSymbol y)) 
-         (eq? ((.toString x)) ((.toString y)))]
         [(eq? (.__proto__ x) (.prototype RegExp)) (eq? (.source x) (.source y))]
         [(and (eq? (typeof x) "object")
               (eq? (typeof y) "object")) (and (eq? (.is-state x) #t)
