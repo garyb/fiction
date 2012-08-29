@@ -253,6 +253,8 @@ define(["util", "javascript"], function (util, js) {
             result = "symbol(\"" + arg.value + "\")";
         } else if (checkForm(arg, "unquote")) {
             return compile(arg.value[1], env);
+        } else if (arg.value.length == 0) {
+            result = "[]";
         } else {
             var outer = [];
             var items = [];
