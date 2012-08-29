@@ -23,19 +23,19 @@
     (.log console "Load import" name "...")
     (let* ([filename (.resolve path "test" (+ name ".fic"))]
            [loaded (.readFileSync fs filename "utf8")]
-           [read-result (.read reader loaded)])
+           [read-result (.read reader (+ name ".fic") loaded)])
       (if (equal? (. read-result 0) 'failure)
         (error "Import '" name "' reading failed: " (show-output read-result))
         (. read-result 1)))))
 
   ; Runs the reader on string `input` and tests the result using `check`.
   (var read (fn (input check)
-    (check (.read reader input))))
+    (check (.read reader "test case" input))))
 
   ; Runs the reader and expander or string `input` and tests the result using
   ; `check`.
   (var expand (fn (input check)
-    (let ([read-result (.read reader input)])
+    (let ([read-result (.read reader "test case" input)])
       (if (equal? (. read-result 0) 'failure)
           (check `(reader-failure ,read-result))
           (check (.expand expander (. read-result 1) node-env load-import))))))

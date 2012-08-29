@@ -7,16 +7,18 @@
 
   (var read-error (fn msg
     (fn (state)
-      (let ([line (.lineNum state)]
+      (let ([src-name (.src-name state)]
+            [line (.lineNum state)]
             [char (.charNum state)])
-        (error (.join (.concat msg `(" (line " ,line ", char " ,char ")")) ""))))))
+        (error (.join (.concat msg `(" (" ,src-name ", line " ,line ", char " ,char ")")) ""))))))
 
   ;----------------------------------------------------------------------------
   ; Stream
   ;----------------------------------------------------------------------------
   
-  (var make-state (fn (input)
+  (var make-state (fn (src-name input)
     (obj [is-state #t]
+         [src-name src-name]
          [input input]
          [i 0]
          [l (.length input)]
@@ -243,8 +245,8 @@
         [end 'end]
         [else (run-reader char state)]))))
 
-  (var read-all (fn (input)
-    (let ([state (make-state input)]
+  (var read-all (fn (src-name input)
+    (let ([state (make-state src-name input)]
           [result '()])
       (let loop0 ([value (read state)])
         (case value
@@ -252,8 +254,8 @@
           [else (.push result value)
                 (loop0 (read state))])))))
               
-  (var read-main (fn (input)
-    (try (let ([result (read-all input)])
+  (var read-main (fn (src-name input)
+    (try (let ([result (read-all src-name input)])
            `(success ,result))
       (catch e `(failure ,e)))))
 

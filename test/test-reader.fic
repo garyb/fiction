@@ -13,37 +13,37 @@
   ("under_scored" should return `((symbol "under_scored" ,s)))
   (".length"      should return `((symbol ".length" ,s)))
   ("úņīčőđē"      should return `((symbol "úņīčőđē" ,s)))
-  ("dot.ted"      should fail   "Invalid use of '.' in symbol (line 1, char 1)"))
+  ("dot.ted"      should fail   "Invalid use of '.' in symbol (test case, line 1, char 1)"))
 
 (when "reading booleans" using read
   ("#t"     should return `((literal #t ,s)))
   ("#f"     should return `((literal #f ,s)))
-  ("#true"  should fail   "Invalid boolean value '#true', expected '#t' or '#f' (line 1, char 1)")
-  ("#tasdf" should fail   "Invalid boolean value '#tasdf', expected '#t' or '#f' (line 1, char 1)")
-  ("#false" should fail   "Invalid boolean value '#false', expected '#t' or '#f' (line 1, char 1)")
-  ("#fasdf" should fail   "Invalid boolean value '#fasdf', expected '#t' or '#f' (line 1, char 1)"))
+  ("#true"  should fail   "Invalid boolean value '#true', expected '#t' or '#f' (test case, line 1, char 1)")
+  ("#tasdf" should fail   "Invalid boolean value '#tasdf', expected '#t' or '#f' (test case, line 1, char 1)")
+  ("#false" should fail   "Invalid boolean value '#false', expected '#t' or '#f' (test case, line 1, char 1)")
+  ("#fasdf" should fail   "Invalid boolean value '#fasdf', expected '#t' or '#f' (test case, line 1, char 1)"))
 
 (when "reading numbers" using read
   ("1"    should return `((literal 1 ,s)))
   ("0.5"  should return `((literal 0.5 ,s)))
   ("0xFF" should return `((literal 0xFF ,s)))
-  ("1a"   should fail   "Invalid number '1a' (line 1, char 1)")
-  ("0xFG" should fail   "Invalid number '0xFG' (line 1, char 1)"))
+  ("1a"   should fail   "Invalid number '1a' (test case, line 1, char 1)")
+  ("0xFG" should fail   "Invalid number '0xFG' (test case, line 1, char 1)"))
 
 
 (when "reading strings" using read
   ("\"word\""                should return `((literal "word" ,s)))
   ("\"escape \\\"this\\\"\"" should return `((literal "escape \\\"this\\\"" ,s)))
   ("\"good: \\u003B\""       should return `((literal "good: \\u003B" ,s)))
-  ("\"bad: \\u3B\""          should fail   "Invalid unicode escape sequence '\\u3B' (line 1, char 9)")
-  ("\"bad: \\u000g\""        should fail   "Invalid unicode escape sequence '\\u000' (line 1, char 9)")
-  ("\"unterminated"          should fail   "Unterminated string, expected a closing '\"' (line 1, char 1)"))
+  ("\"bad: \\u3B\""          should fail   "Invalid unicode escape sequence '\\u3B' (test case, line 1, char 9)")
+  ("\"bad: \\u000g\""        should fail   "Invalid unicode escape sequence '\\u000' (test case, line 1, char 9)")
+  ("\"unterminated"          should fail   "Unterminated string, expected a closing '\"' (test case, line 1, char 1)"))
 
 (when "reading regular expressions" using read
   ("#/[a-z]/"    should return `((literal #/[a-z]/ ,s)))
   ("#/[a-z]/gim" should return `((literal #/[a-z]/gim ,s)))
   ("#/\\b\\B\\cX\\d\\D\\f\\n\\r\\s\\S\\t\\v\\w\\W\\1\\2\\3\\4\\5\\6\\7\\8\\9/" should return `((literal #/\b\B\cX\d\D\f\n\r\s\S\t\v\w\W\1\2\3\4\5\6\7\8\9/ ,s)))
-  ("#/[a-z]/s"   should fail   "Invalid regular expression options 's' (line 1, char 1)"))
+  ("#/[a-z]/s"   should fail   "Invalid regular expression options 's' (test case, line 1, char 1)"))
 
 (when "reading lists" using read
   ("()"              should return `((list () ,s)))
