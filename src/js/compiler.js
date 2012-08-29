@@ -467,7 +467,7 @@ define(["util", "javascript"], function (util, js) {
             if (tmp.id !== "symbol") {
                 throw new Error("Don't know how to deal with the case where 'symbol' was already reserved in the environment");
             }
-            prefix = "var symbol = (function () { var table = {}; return function (id) { return table.hasOwnProperty(id) ? table[id] : table[id] = { isSymbol: true, toString: function () { return id; } }; }; }());\n";
+            prefix = 'var symbol = (function () {\n\tvar symGlobal = (typeof window === "undefined") ? (typeof global === "undefined") ? this : global : window;\n\treturn symGlobal.$__fiction_symbol || (symGlobal.$__fiction_symbol = (function () {\n\t\tvar table = {};\n\t\treturn function (id) {\n\t\t\treturn Object.prototype.hasOwnProperty.call(table, id) ? table[id] : table[id] = { id: id };\n\t\t};\n\t}()));\n}());\n';
             env = tmp.env;
         }
         return prefix + compileAll(forms, env).value;
