@@ -1,8 +1,8 @@
-(import "lang")
-(import "prelude")
-(import "compiler-macros")
-
 (define '("util") (fn (util)
+
+  (import "lang")
+  (import "prelude")
+  (import "compiler-macros")
 
   (var clone (.clone util))
   (var copyProps (.copyProps util))

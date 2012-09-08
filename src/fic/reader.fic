@@ -1,7 +1,7 @@
-(import "lang")
-(import "compiler-macros")
-
 (define '("util") (fn (util)
+
+  (import "lang")
+  (import "compiler-macros")
 
   (var clone (.clone util))
 
