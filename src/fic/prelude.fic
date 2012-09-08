@@ -10,9 +10,11 @@
 (var car (fn (xs) (. xs 0)))
 (var cdr (fn (xs) (.slice xs 1)))
 
-(var cadr (fn (xs) (car (cdr xs))))
-(var caddr (fn (xs) (car (cdr (cdr xs)))))
-(var cadddr (fn (xs) (car (cdr (cdr (cdr xs))))))
+(var cadr (fn (xs) (. xs 1)))
+(var cddr (fn (xs) (.slice xs 2)))
+
+(var caddr (fn (xs) (. xs 2)))
+(var cdddr (fn (xs) (.slice xs 3)))
 
 (var in? (fn (obj prop)
   (.call (.hasOwnProperty (.prototype Object)) obj prop)))
