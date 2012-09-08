@@ -13,7 +13,7 @@
           [else ((.toString out))])))
 
   (var expand-error (fn msg
-      (error msg)))
+      (error (.join msg ""))))
       
   ;----------------------------------------------------------------------------
   ; Environment
@@ -27,18 +27,18 @@
   ;----------------------------------------------------------------------------
   
   (var expand-import (fn (form env load-import import-chain)
-    `(,`(,form) ,env)))
+    `((,form) ,env)))
     
   ;----------------------------------------------------------------------------
   ; Helpers
   ;----------------------------------------------------------------------------
   
-  (var update-symbol (fn (env id form)
+  (var update-symbol (fn (id env pos form)
     (if (in? env id)
         (let ([new-id (. env id)])
           (if (fn? new-id)
               (expand-error id ": bad syntax")
-              `(literal ,new-id ,(. form 2))))
+              `(literal ,new-id ,pos)))
         ; TODO: this should possibly be an error rather than a fallback case
         form)))
 
@@ -46,12 +46,21 @@
   ; Main
   ;----------------------------------------------------------------------------
   
+  (var expand-list (fn (atoms env pos load-import import-chain)
+    (cond
+      [(and (eq? (car atoms) 'symbol)
+            (in? env (cadr atoms))
+            (fn? (. env (cadr atoms))))
+         ((. env (cadr atoms)) atoms env pos load-import import-chain)]
+      [else (letl ([atoms* env*] (expand-all atoms env load-import import-chain))
+              `(((list ,atoms* ,pos)) ,env*))])))
+  
   (var expand (fn (form env load-import import-chain)
     (letl ([type value pos] form)
       (case type
-        [list `(,`(,form) ,env)]
-        [symbol `(,`(,(update-symbol env value form)) ,env)]
-        [literal `(,`(,form) ,env)]
+        [list (expand-list value env (caddr form) load-import import-chain)]
+        [symbol `((,(update-symbol value env (caddr form) form)) ,env)]
+        [literal `((,form) ,env)]
         [comment `(() ,env)]
         [else (expand-error "expand: unknown form type " type)]))))
   
@@ -68,7 +77,7 @@
   (var expand-main (fn (input env load-import)
     (let* ([env (copyProps env (get-default-env))]
            [tmp (expand-all input env load-import '())])
-        `(success ,(. tmp 0)))))
+      `(success ,(. tmp 0)))))
 
   ;----------------------------------------------------------------------------
   ; Exports
