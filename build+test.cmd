@@ -6,6 +6,10 @@ echo Compiling reader...
 node src/js/main.js src/fic/reader.fic bin/reader.js
 IF %ERRORLEVEL% NEQ 0 GOTO error
 
+echo Compiling syntax checking...
+node src/js/main.js src/fic/syntax.fic bin/syntax.js
+IF %ERRORLEVEL% NEQ 0 GOTO error
+
 echo Compiling expander...
 node src/js/main.js src/fic/expander.fic bin/expander.js
 IF %ERRORLEVEL% NEQ 0 GOTO error

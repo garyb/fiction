@@ -1,0 +1,31 @@
+(define '("util") (fn (util)
+
+  (import "lang")
+  (import "prelude")
+  (import "compiler-macros")
+  
+  (var stx-error (fn msg
+    (fn (state)
+      (let ([src-name (.src-name state)]
+            [line (.lineNum state)]
+            [char (.charNum state)])
+        (error (.join (.concat msg `(" (" ,src-name ", line " ,line ", char " ,char ")")) ""))))))
+      
+  (var string-literal? (fn (form)
+    (letl ([type value] form)
+      (and (eq? type 'literal)
+           (eq? (typeof value) "string")))))
+           
+  (var check-import (fn (atoms pos)
+    (if (empty? atoms) 
+        ((stx-error "import: bad syntax - empty expression") pos)
+        (let loop ([atom (car atoms)]
+                   [rest (cdr atoms)])
+          (if (string-literal? atom)
+              (if (empty? rest)
+                  #t
+                  (loop (car rest) (cdr rest)))
+              ((stx-error "import: bad syntax - invalid import name, should be a string") (caddr atom)))))))
+  
+  (obj
+    [check-import check-import])))
