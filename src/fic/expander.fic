@@ -1,4 +1,4 @@
-(define '("util") (fn (util)
+(define '("util" "syntax") (fn (util syntax)
 
   (import "lang")
   (import "prelude")
@@ -26,8 +26,20 @@
   ; Expanders
   ;----------------------------------------------------------------------------
   
-  (var expand-import (fn (form env load-import import-chain)
-    `((,form) ,env)))
+  (var expand-import (fn (atoms env pos load-import import-chain)
+    (.check-import syntax atoms pos)
+    (let ([imports (map cadr atoms)]
+          [import-chain* (cons (.src-name pos) import-chain)])
+      (let loop ([result '()]
+                 [env env]
+                 [file (car imports)]
+                 [rest (cdr imports)])
+        (if (memq file import-chain*)
+            (expand-error "import: loop found in \"" (.join ((.reverse (cons file import-chain*))) "\" -> \"") "\"")
+            (letl ([imported env*] (expand-all (load-import file) env load-import import-chain*))
+              (if (eq? (.length rest) 0)
+                  `(,(.concat result imported) ,env*)
+                  (loop (.concat result imported) env* (car imports) (cdr imports)))))))))
     
   ;----------------------------------------------------------------------------
   ; Helpers
@@ -48,10 +60,10 @@
   
   (var expand-list (fn (atoms env pos load-import import-chain)
     (cond
-      [(and (eq? (car atoms) 'symbol)
-            (in? env (cadr atoms))
-            (fn? (. env (cadr atoms))))
-         ((. env (cadr atoms)) atoms env pos load-import import-chain)]
+      [(and (eq? (caar atoms) 'symbol)
+            (in? env (cadar atoms))
+            (fn? (. env (cadar atoms))))
+         ((. env (cadar atoms)) (cdr atoms) env pos load-import import-chain)]
       [else (letl ([atoms* env*] (expand-all atoms env load-import import-chain))
               `(((list ,atoms* ,pos)) ,env*))])))
   
@@ -75,9 +87,10 @@
       ,env)))
 
   (var expand-main (fn (input env load-import)
-    (let* ([env (copyProps env (get-default-env))]
-           [tmp (expand-all input env load-import '())])
-      `(success ,(. tmp 0)))))
+    (let ([env (copyProps env (get-default-env))])
+      (try (let ([tmp (expand-all input env load-import '())])
+             `(success ,(. tmp 0)))
+        (catch e `(failure ,e))))))
 
   ;----------------------------------------------------------------------------
   ; Exports
