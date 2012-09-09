@@ -22,10 +22,9 @@
 
   ; Handles loading of import `name`.
   (var load-import (fn (name)
-    (.log console "Load import" name "...")
-    (let* ([filename (.resolve path "test" (+ name ".fic"))]
+    (let* ([filename (.resolve path "test" name)]
            [loaded (.readFileSync fs filename "utf8")]
-           [read-result (.read reader (+ name ".fic") loaded)])
+           [read-result (.read reader name loaded)])
       (if (equal? (. read-result 0) 'failure)
         (error "Import '" name "' reading failed: " (show-output read-result))
         (. read-result 1)))))
