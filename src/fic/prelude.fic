@@ -5,19 +5,44 @@
 (var append (fn (xs ys) (.concat xs ys)))
 
 ; not really cons, you can't do (cons x y) at all, y has to be a list ys.
-(var cons (fn (x ys) (.concat `(x) ys)))
+(var cons (fn (x ys) (.concat `(,x) ys)))
 
 (var car (fn (xs) (. xs 0)))
 (var cdr (fn (xs) (.slice xs 1)))
 
-(var cadr (fn (xs) (. xs 1)))
-(var cddr (fn (xs) (.slice xs 2)))
+(var caar (fn (xs) (car (car xs))))
+(var cadr (fn (xs) (car (cdr xs))))
+(var cdar (fn (xs) (cdr (car xs))))
+(var cddr (fn (xs) (cdr (cdr xs))))
 
-(var caddr (fn (xs) (. xs 2)))
-(var cdddr (fn (xs) (.slice xs 3)))
+(var caaar (fn (xs) (car (car (car xs)))))
+(var caadr (fn (xs) (car (car (cdr xs)))))
+(var cadar (fn (xs) (car (cdr (car xs)))))
+(var caddr (fn (xs) (car (cdr (cdr xs)))))
+(var cdaar (fn (xs) (cdr (car (car xs)))))
+(var cdadr (fn (xs) (cdr (car (cdr xs)))))
+(var cddar (fn (xs) (cdr (cdr (car xs)))))
+(var cdddr (fn (xs) (cdr (cdr (car xs)))))
+
+(var caaaar (fn (xs) (car (car (car (car xs))))))
+(var caaadr (fn (xs) (car (car (car (cdr xs))))))
+(var caadar (fn (xs) (car (car (cdr (car xs))))))
+(var caaddr (fn (xs) (car (car (cdr (cdr xs))))))
+(var cadaar (fn (xs) (car (cdr (car (car xs))))))
+(var cadadr (fn (xs) (car (cdr (car (cdr xs))))))
+(var caddar (fn (xs) (car (cdr (cdr (car xs))))))
+(var cadddr (fn (xs) (car (cdr (cdr (cdr xs))))))
+(var cdaaar (fn (xs) (cdr (car (car (car xs))))))
+(var cdaadr (fn (xs) (cdr (car (car (cdr xs))))))
+(var cdadar (fn (xs) (cdr (car (cdr (car xs))))))
+(var cdaddr (fn (xs) (cdr (car (cdr (cdr xs))))))
+(var cddaar (fn (xs) (cdr (cdr (car (car xs))))))
+(var cddadr (fn (xs) (cdr (cdr (car (cdr xs))))))
+(var cdddar (fn (xs) (cdr (cdr (cdr (car xs))))))
+(var cddddr (fn (xs) (cdr (cdr (cdr (cdr xs))))))
 
 (var in? (fn (obj prop)
   (.call (.hasOwnProperty (.prototype Object)) obj prop)))
-  
+
 (var fn? (fn (f)
   (eq? (typeof f) "function")))
