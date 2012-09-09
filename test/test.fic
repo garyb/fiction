@@ -19,9 +19,9 @@
     (runner input (behaviour output (fn (result result-value)
       (++ num-cases)
       (if result
-          (.log console "-" (show-input input) "should" ((.toString behaviour-sym)) (show-output output) "-- \u001b[32mPASS\u001b[0m")
+          (.log console "-" (show-input input) "should" (.id behaviour-sym) (show-output output) "-- \u001b[32mPASS\u001b[0m")
           (do (++ num-fails)
-              (.log console "-" (show-input input) "should" ((.toString behaviour-sym)) (show-output output) "-- \u001b[1;31mFAIL\u001b[0m")
+              (.log console "-" (show-input input) "should" (.id behaviour-sym) (show-output output) "-- \u001b[1;31mFAIL\u001b[0m")
               (.log console "\u001b[31m      result was:" (show-output result-value) "\u001b[0m")))
       (k)))))))
       
