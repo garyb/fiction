@@ -92,8 +92,8 @@ define(["util", "syntax"], function (util, syntax) {
         var result, tmp, prop;
         if (atoms[0].type === "list") {
             if (atoms[0].value[0].value === ".") {
-                tmp = expandAll(atoms[0].value, env, imp, impChain);
-                prop = createForm("list", tmp.value);
+                tmp = expandAll(atoms[0].value.slice(1), env, imp, impChain);
+                prop = createForm("list", atoms[0].value.slice(0, 1).concat(tmp.value));
                 env = tmp.env;
             } else {
                 tmp = expandShortProp(atoms[0], env, imp, impChain);
