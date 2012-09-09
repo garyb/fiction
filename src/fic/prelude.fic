@@ -1,8 +1,34 @@
 (var map (fn (f list) (.map list f)))
+(var foreach (fn (f list) (.foreach list f) #t))
 (var filter (fn (f list) (.filter list f)))
+(var every (fn (f list) (.every list f)))
+(var any (fn (f list) (.some list f)))
 (var fold-left (fn (f init list) (.reduce list f init)))
 (var fold-right (fn (f init list) (.reduceRight list f init)))
 (var append (fn (xs ys) (.concat xs ys)))
+
+(var contains (fn (x xs) (> (.indexOf xs x) (- 1))))
+
+(var memq (fn (x xs)
+  (cond
+    [(empty? xs) #f]
+    [(eq? (car xs) x) xs]
+    [else (memq x (cdr xs))])))
+    
+(var memv (fn (x xs)
+  (cond
+    [(empty? xs) #f]
+    [(eqv? (car xs) x) xs]
+    [else (memv x (cdr xs))])))
+    
+(var member (fn (x xs)
+  (cond
+    [(empty? xs) #f]
+    [(equal? (car xs) x) xs]
+    [else (member x (cdr xs))])))
+    
+(var empty? (fn (xs) (eq? (.length xs) 0)))
+      
 
 ; not really cons, you can't do (cons x y) at all, y has to be a list ys.
 (var cons (fn (x ys) (.concat `(,x) ys)))
