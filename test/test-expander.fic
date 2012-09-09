@@ -3,14 +3,15 @@
 (when "expanding to identity" using expand
   ["1 #t" should return `((literal 1 ,s) (literal #t ,s))]
   ["a b" should return `((symbol "a" ,s) (symbol "b" ,s))]
-  ["'a"  should return `((list ((symbol "quote" ,s) (symbol "a" ,s)) ,s))])
-  
-  
+  ["'a"  should return `((list ((symbol "quote" ,s) (symbol "a" ,s)) ,s))]
+  )
+
 (when "expanding comments" using expand
   ["; foo" should return `()]
   ["a\n; foo\nb" should return `((symbol "a" ,s) (symbol "b" ,s))]
-  ["(a\n; foo\nb)" should return `((list ((symbol "a" ,s) (symbol "b" ,s)) ,s))]) 
-  
+  ["(a\n; foo\nb)" should return `((list ((symbol "a" ,s) (symbol "b" ,s)) ,s))]
+  )
+
 (when "expanding imports" using expand
   ["(import \"import-test-1.fic\")" should return `((symbol "a" ,s))]
   ["(import \"import-test-2.fic\")" should return `((symbol "b" ,s) (symbol "a" ,s))]
@@ -18,4 +19,19 @@
   ["(import foo)"                   should fail   "import: bad syntax - invalid import name, should be a string (test case, line 1, char 9)"]
   ["(import \"import-test-3.fic\")" should fail   "import: loop found in \"test case\" -> \"import-test-3.fic\" -> \"import-test-3.fic\""]
   ["(import \"import-test-4.fic\")" should fail   "import: loop found in \"test case\" -> \"import-test-4.fic\" -> \"import-test-4a.fic\" -> \"import-test-4.fic\""]
-  ["(import \"import-test-5.fic\")" should fail   "import: loop found in \"test case\" -> \"import-test-5.fic\" -> \"import-test-5a.fic\" -> \"import-test-5b.fic\" -> \"import-test-5.fic\""])
+  ["(import \"import-test-5.fic\")" should fail   "import: loop found in \"test case\" -> \"import-test-5.fic\" -> \"import-test-5a.fic\" -> \"import-test-5b.fic\" -> \"import-test-5.fic\""]
+  )
+
+(when "expanding var declarations" using expand
+  ["(var a 5)"           should return `((list ((symbol "var" ,s) (symbol "a" ,s) (literal 5 ,s)) ,s))]
+  ["(var a 5) (var b 1)" should return `((list ((symbol "var" ,s) (symbol "a" ,s) (literal 5 ,s)) ,s) (list ((symbol "var" ,s) (symbol "b" ,s) (literal 1 ,s)) ,s))]
+  ["(var a 5) (var a 2)" should return `((list ((symbol "var" ,s) (symbol "a" ,s) (literal 5 ,s)) ,s) (list ((symbol "var" ,s) (symbol "a1" ,s) (literal 2 ,s)) ,s))]
+  ["(var a (var a 2))"   should return `((list ((symbol "var" ,s) (symbol "a" ,s) (list ((symbol "var" ,s) (symbol "a1" ,s) (literal 2 ,s)) ,s)) ,s))]
+  ["(var)"               should fail   "var: bad syntax - empty expression (test case, line 1, char 1)"]
+  ["(var a)"             should fail   "var: no value specified (test case, line 1, char 1)"]
+  ["(var a b c)"         should fail   "var: expects exactly 2 arguments (test case, line 1, char 1)"]
+  ["(var (x y) 5)"       should fail   "var: invalid id (test case, line 1, char 1)"]
+  ["(var (x y) 5)"       should fail   "var: invalid id (test case, line 1, char 1)"]
+  ["(var .a 5)"          should fail   "var: invalid id (test case, line 1, char 1)"]
+  ["(var . 5)"           should fail   "var: invalid id (test case, line 1, char 1)"]
+  )

@@ -11,21 +11,39 @@
             [char (.charNum state)])
         (error (.join (.concat msg `(" (" ,src-name ", line " ,line ", char " ,char ")")) ""))))))
       
-  (var string-literal? (fn (form)
+  (var string-atom? (fn (form)
     (letl ([type value] form)
       (and (eq? type 'literal)
-           (eq? (typeof value) "string")))))
+           (eq? (typeof value) "string"))))) 
+           
+  (var symbol-atom? (fn (form)
+    (eq? (car form) 'symbol)))
+    
+  (var dotted-symbol? (fn (form)
+    (letl ([type value] form)
+      (and (eq? type 'symbol)
+           (eq? (.charAt value 0) ".")))))
            
   (var check-import (fn (atoms pos)
     (if (empty? atoms) 
         ((stx-error "import: bad syntax - empty expression") pos)
         (let loop ([atom (car atoms)]
                    [rest (cdr atoms)])
-          (if (string-literal? atom)
+          (if (string-atom? atom)
               (if (empty? rest)
                   #t
                   (loop (car rest) (cdr rest)))
               ((stx-error "import: bad syntax - invalid import name, should be a string") (caddr atom)))))))
+              
+  (var check-var (fn (atoms pos)
+    (cond
+      [(empty? atoms) ((stx-error "var: bad syntax - empty expression") pos)]
+      [(eq? (.length atoms) 1) ((stx-error "var: no value specified") pos)]
+      [(> (.length atoms) 2) ((stx-error "var: expects exactly 2 arguments") pos)]
+      [(not (symbol-atom? (car atoms))) ((stx-error "var: invalid id") pos)]
+      [(dotted-symbol? (car atoms)) ((stx-error "var: invalid id") pos)]
+      [else #t])))
   
   (obj
-    [check-import check-import])))
+    [check-import check-import]
+    [check-var check-var])))

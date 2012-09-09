@@ -5,7 +5,7 @@
   (import "compiler-macros")
 
   (var clone (.clone util))
-  (var copyProps (.copyProps util))
+  (var copy-props (.copyProps util))
 
   (var show (fn (out)
     (cond [(.isArray Array out) (.join `("(" ,(.join (.map out show) " ") ")") "")]
@@ -20,13 +20,36 @@
   ;----------------------------------------------------------------------------
   
   (var get-default-env (fn ()
-    (obj ["import" expand-import])))
-      
+    (obj ["#gensym" (obj [value 0])]
+         ["import" expand-import]
+         ["var" expand-var])))
+    
+  (var env-put (fn (env id val)
+    (if (eq? id "#gensym")
+        (error "env-put: tried to override #gensym")
+        (let ([result (clone env)])
+          (if val
+              (do (set! (. result id) val)
+                  `(,id ,result))
+              (let ([new-id (find-next-id env id)])
+                (set! (. result id) new-id)
+                (set! (. result new-id) new-id)
+                `(,new-id ,result)))))))
+            
+  (var find-next-id (fn (env id)
+    (if (in? env id)
+        (let loop ([n (+ (.value (. env "#gensym")) 1)])
+          (if (in? env (+ id n))
+              (loop (+ n 1))
+              (do (set! (.value (. env "#gensym")) n)
+                  (+ id n))))
+        id)))
+
   ;----------------------------------------------------------------------------
   ; Expanders
   ;----------------------------------------------------------------------------
   
-  (var expand-import (fn (atoms env pos load-import import-chain)
+  (var expand-import (fn (head atoms env pos load-import import-chain)
     (.check-import syntax atoms pos)
     (let ([imports (map cadr atoms)]
           [import-chain* (cons (.src-name pos) import-chain)])
@@ -40,6 +63,18 @@
               (if (eq? (.length rest) 0)
                   `(,(.concat result imported) ,env*)
                   (loop (.concat result imported) env* (car imports) (cdr imports)))))))))
+    
+  (var expand-var (fn (head atoms env pos load-import import-chain)
+    (.check-var syntax atoms pos)
+    (letl ([id env*] (env-put env (cadar atoms)))
+      (letl ([value env**] (expand (cadr atoms) env* load-import import-chain))
+        (if (> (.length value) 1)
+            ; TODO: something better than this. maybe the splicing type 
+            ; behaviour (expand returning lists) can be avoided entirely if I
+            ; make (import) less horrible, as that's the only way one form can
+            ; become multiple.
+            (expand-error "var: value expanded into multiple items")
+            `(((list (,head (symbol ,id ,(caddar atoms)) ,(. value 0)) ,pos)) ,env**))))))
     
   ;----------------------------------------------------------------------------
   ; Helpers
@@ -63,7 +98,7 @@
       [(and (eq? (caar atoms) 'symbol)
             (in? env (cadar atoms))
             (fn? (. env (cadar atoms))))
-         ((. env (cadar atoms)) (cdr atoms) env pos load-import import-chain)]
+         ((. env (cadar atoms)) (car atoms) (cdr atoms) env pos load-import import-chain)]
       [else (letl ([atoms* env*] (expand-all atoms env load-import import-chain))
               `(((list ,atoms* ,pos)) ,env*))])))
   
@@ -87,7 +122,7 @@
       ,env)))
 
   (var expand-main (fn (input env load-import)
-    (let ([env (copyProps env (get-default-env))])
+    (let ([env (copy-props env (get-default-env))])
       (try (let ([tmp (expand-all input env load-import '())])
              `(success ,(. tmp 0)))
         (catch e `(failure ,e))))))
